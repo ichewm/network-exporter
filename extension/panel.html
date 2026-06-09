@@ -1,0 +1,146 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Network Exporter</title>
+    <link rel="stylesheet" href="panel.css">
+  </head>
+  <body>
+    <main class="app">
+      <section class="toolbar" aria-label="Network controls">
+        <button id="recordToggle" class="icon-button active" type="button" title="Record requests" aria-label="Record requests">
+          <span class="record-dot"></span>
+        </button>
+        <button id="clearRequests" class="icon-button" type="button" title="Clear captured requests" aria-label="Clear captured requests">
+          <span class="clear-icon"></span>
+        </button>
+        <button id="filterToggle" class="icon-button active" type="button" title="Show filters" aria-label="Show filters">
+          <span class="filter-icon"></span>
+        </button>
+        <label class="search-box">
+          <span class="search-icon"></span>
+          <input id="filterInput" type="search" placeholder="Filter by URL, name, method, status, domain, or type">
+        </label>
+        <label class="check-control">
+          <input id="invertFilter" type="checkbox">
+          <span>Invert</span>
+        </label>
+        <label class="check-control">
+          <input id="excludeExtensionRequests" type="checkbox" checked>
+          <span>Exclude extensions</span>
+        </label>
+        <select id="statusFilter" class="select-control" aria-label="Status filter">
+          <option value="">Any status</option>
+          <option value="2">2xx</option>
+          <option value="3">3xx</option>
+          <option value="4">4xx</option>
+          <option value="5">5xx</option>
+          <option value="failed">Failed</option>
+        </select>
+      </section>
+
+      <section id="filterPanel" class="filters" aria-label="Resource type filters">
+        <div id="typeChips" class="chips" role="listbox" aria-label="Resource type">
+          <button class="chip active" type="button" data-type="all">All</button>
+          <button class="chip" type="button" data-type="fetch-xhr">Fetch/XHR</button>
+          <button class="chip" type="button" data-type="doc">Doc</button>
+          <button class="chip" type="button" data-type="css">CSS</button>
+          <button class="chip" type="button" data-type="js">JS</button>
+          <button class="chip" type="button" data-type="font">Font</button>
+          <button class="chip" type="button" data-type="img">Img</button>
+          <button class="chip" type="button" data-type="media">Media</button>
+          <button class="chip" type="button" data-type="manifest">Manifest</button>
+          <button class="chip" type="button" data-type="socket">Socket</button>
+          <button class="chip" type="button" data-type="wasm">Wasm</button>
+          <button class="chip" type="button" data-type="other">Other</button>
+        </div>
+      </section>
+
+      <section class="content">
+        <section class="request-pane" aria-label="Captured requests">
+          <div class="table-meta">
+            <span id="requestCount">0 requests</span>
+            <span id="selectedCount">0 selected</span>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th class="select-col">
+                    <input id="selectAll" type="checkbox" aria-label="Select all visible requests">
+                  </th>
+                  <th>Name</th>
+                  <th>Method</th>
+                  <th>Status</th>
+                  <th>Type</th>
+                  <th>Size</th>
+                  <th>Time</th>
+                  <th>Initiator</th>
+                  <th>URL</th>
+                </tr>
+              </thead>
+              <tbody id="requestRows"></tbody>
+            </table>
+          </div>
+          <section class="detail-pane" aria-label="Request details">
+            <div class="detail-header">
+              <div class="detail-title">
+                <strong id="detailName">No request selected</strong>
+                <span id="detailUrl"></span>
+              </div>
+              <div id="detailTabs" class="detail-tabs" role="tablist" aria-label="Request detail tabs">
+                <button class="detail-tab active" type="button" data-detail-tab="headers">Headers</button>
+                <button class="detail-tab" type="button" data-detail-tab="payload">Payload</button>
+                <button class="detail-tab" type="button" data-detail-tab="response">Response</button>
+                <button class="detail-tab" type="button" data-detail-tab="meta">Meta</button>
+              </div>
+            </div>
+            <pre id="detailContent" class="detail-content">Click a request row to inspect it.</pre>
+          </section>
+        </section>
+
+        <aside class="export-pane" aria-label="Export options">
+          <div class="export-header">
+            <h1>Export</h1>
+            <div class="preset-actions">
+              <button id="selectDefaults" type="button">Defaults</button>
+              <button id="selectFullFields" type="button">Full</button>
+            </div>
+          </div>
+
+          <fieldset class="field-list">
+            <legend>Fields</legend>
+            <label><input type="checkbox" data-field="curlRequest" checked> curlRequest</label>
+            <label><input type="checkbox" data-field="statusCode" checked> statusCode</label>
+            <label><input type="checkbox" data-field="responseBody" checked> responseBody</label>
+            <label><input type="checkbox" data-field="url" checked> url</label>
+            <label><input type="checkbox" data-field="method" checked> method</label>
+            <label><input type="checkbox" data-field="name"> name</label>
+            <label><input type="checkbox" data-field="type"> type</label>
+            <label><input type="checkbox" data-field="size"> size</label>
+            <label><input type="checkbox" data-field="time"> time</label>
+            <label><input type="checkbox" data-field="initiator"> initiator</label>
+            <label><input type="checkbox" data-field="requestHeaders"> requestHeaders</label>
+            <label><input type="checkbox" data-field="requestBody"> requestBody</label>
+            <label><input type="checkbox" data-field="responseHeaders"> responseHeaders</label>
+            <label><input type="checkbox" data-field="mimeType"> mimeType</label>
+          </fieldset>
+
+          <label class="check-control sensitive">
+            <input id="includeSensitiveHeaders" type="checkbox">
+            <span>Include sensitive headers</span>
+          </label>
+
+          <div class="export-actions">
+            <button id="copyJson" type="button">Copy selected as JSON</button>
+            <button id="copyMarkdown" type="button">Copy selected as Markdown</button>
+          </div>
+          <p id="statusMessage" class="status-message" role="status"></p>
+        </aside>
+      </section>
+    </main>
+
+    <script src="panel.js"></script>
+  </body>
+</html>

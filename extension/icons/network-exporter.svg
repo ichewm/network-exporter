@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128" role="img" aria-label="Network Exporter icon">
+  <defs>
+    <linearGradient id="bg" x1="18" y1="12" x2="112" y2="120" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#10202a"/>
+      <stop offset="1" stop-color="#241819"/>
+    </linearGradient>
+    <linearGradient id="accent" x1="32" y1="24" x2="96" y2="104" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#40d8c8"/>
+      <stop offset="1" stop-color="#ff7a66"/>
+    </linearGradient>
+  </defs>
+  <rect x="16" y="16" width="96" height="96" rx="21" fill="url(#bg)"/>
+  <rect x="16" y="16" width="96" height="96" rx="21" fill="none" stroke="#ffffff" stroke-opacity="0.16" stroke-width="3"/>
+
+  <path d="M42 48h17l13 16h15" fill="none" stroke="#a7fff4" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M42 80h17l13-16" fill="none" stroke="#ffb19f" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>
+
+  <circle cx="40" cy="48" r="10" fill="#38d6c7"/>
+  <circle cx="40" cy="80" r="10" fill="#ff7a66"/>
+  <circle cx="73" cy="64" r="10" fill="url(#accent)"/>
+
+  <path d="M84 46h12c6 0 9 4 9 9v19c0 6-3 9-9 9H84" fill="none" stroke="#f8fbff" stroke-width="7" stroke-linecap="round"/>
+  <path d="M88 64h20" fill="none" stroke="#f8fbff" stroke-width="7" stroke-linecap="round"/>
+  <path d="M99 55l10 9-10 9" fill="none" stroke="#f8fbff" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>
