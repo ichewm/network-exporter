@@ -37,6 +37,7 @@
           <option value="4">4xx</option>
           <option value="5">5xx</option>
           <option value="failed">Failed</option>
+          <option value="errors">Errors</option>
         </select>
       </section>
 
@@ -57,10 +58,11 @@
         </div>
       </section>
 
-      <section class="content">
+      <section id="content" class="content">
         <section class="request-pane" aria-label="Captured requests">
           <div class="table-meta">
             <span id="requestCount">0 requests</span>
+            <span id="statusSummary" class="status-summary" aria-label="Status summary"></span>
             <span id="selectedCount">0 selected</span>
           </div>
           <div class="table-wrap">
@@ -100,43 +102,50 @@
           </section>
         </section>
 
-        <aside class="export-pane" aria-label="Export options">
+        <aside id="exportPane" class="export-pane" aria-label="Export options">
           <div class="export-header">
             <h1>Export</h1>
-            <div class="preset-actions">
-              <button id="selectDefaults" type="button">Defaults</button>
-              <button id="selectFullFields" type="button">Full</button>
+            <div class="export-header-actions">
+              <div class="preset-actions">
+                <button id="selectDefaults" type="button">Defaults</button>
+                <button id="selectFullFields" type="button">Full</button>
+              </div>
+              <button id="toggleExportPane" class="icon-button export-toggle" type="button" title="Collapse export panel" aria-label="Collapse export panel">
+                <span class="collapse-icon"></span>
+              </button>
             </div>
           </div>
 
-          <fieldset class="field-list">
-            <legend>Fields</legend>
-            <label><input type="checkbox" data-field="curlRequest" checked> curlRequest</label>
-            <label><input type="checkbox" data-field="statusCode" checked> statusCode</label>
-            <label><input type="checkbox" data-field="responseBody" checked> responseBody</label>
-            <label><input type="checkbox" data-field="url" checked> url</label>
-            <label><input type="checkbox" data-field="method" checked> method</label>
-            <label><input type="checkbox" data-field="name"> name</label>
-            <label><input type="checkbox" data-field="type"> type</label>
-            <label><input type="checkbox" data-field="size"> size</label>
-            <label><input type="checkbox" data-field="time"> time</label>
-            <label><input type="checkbox" data-field="initiator"> initiator</label>
-            <label><input type="checkbox" data-field="requestHeaders"> requestHeaders</label>
-            <label><input type="checkbox" data-field="requestBody"> requestBody</label>
-            <label><input type="checkbox" data-field="responseHeaders"> responseHeaders</label>
-            <label><input type="checkbox" data-field="mimeType"> mimeType</label>
-          </fieldset>
+          <div id="exportBody" class="export-body">
+            <fieldset class="field-list">
+              <legend>Fields</legend>
+              <label><input type="checkbox" data-field="curlRequest" checked> curlRequest</label>
+              <label><input type="checkbox" data-field="statusCode" checked> statusCode</label>
+              <label><input type="checkbox" data-field="responseBody" checked> responseBody</label>
+              <label><input type="checkbox" data-field="url" checked> url</label>
+              <label><input type="checkbox" data-field="method" checked> method</label>
+              <label><input type="checkbox" data-field="name"> name</label>
+              <label><input type="checkbox" data-field="type"> type</label>
+              <label><input type="checkbox" data-field="size"> size</label>
+              <label><input type="checkbox" data-field="time"> time</label>
+              <label><input type="checkbox" data-field="initiator"> initiator</label>
+              <label><input type="checkbox" data-field="requestHeaders"> requestHeaders</label>
+              <label><input type="checkbox" data-field="requestBody"> requestBody</label>
+              <label><input type="checkbox" data-field="responseHeaders"> responseHeaders</label>
+              <label><input type="checkbox" data-field="mimeType"> mimeType</label>
+            </fieldset>
 
-          <label class="check-control sensitive">
-            <input id="includeSensitiveHeaders" type="checkbox">
-            <span>Include sensitive headers</span>
-          </label>
+            <label class="check-control sensitive">
+              <input id="includeSensitiveHeaders" type="checkbox">
+              <span>Include sensitive headers</span>
+            </label>
 
-          <div class="export-actions">
-            <button id="copyJson" type="button">Copy selected as JSON</button>
-            <button id="copyMarkdown" type="button">Copy selected as Markdown</button>
+            <div class="export-actions">
+              <button id="copyJson" type="button">Copy selected as JSON</button>
+              <button id="copyMarkdown" type="button">Copy selected as Markdown</button>
+            </div>
+            <p id="statusMessage" class="status-message" role="status"></p>
           </div>
-          <p id="statusMessage" class="status-message" role="status"></p>
         </aside>
       </section>
     </main>

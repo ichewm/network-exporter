@@ -14,6 +14,7 @@ const state = {
   requests: [],
   selectedIds: new Set(),
   isRecording: true,
+  isExportCollapsed: false,
   activeType: "all",
   activeRequestId: "",
   activeDetailTab: "headers",
@@ -26,6 +27,7 @@ const state = {
 let nextRequestSequence = 0;
 
 const els = {
+  content: document.getElementById("content"),
   recordToggle: document.getElementById("recordToggle"),
   clearRequests: document.getElementById("clearRequests"),
   filterToggle: document.getElementById("filterToggle"),
@@ -37,12 +39,15 @@ const els = {
   typeChips: document.getElementById("typeChips"),
   requestRows: document.getElementById("requestRows"),
   requestCount: document.getElementById("requestCount"),
+  statusSummary: document.getElementById("statusSummary"),
   selectedCount: document.getElementById("selectedCount"),
   selectAll: document.getElementById("selectAll"),
   detailTabs: document.getElementById("detailTabs"),
   detailName: document.getElementById("detailName"),
   detailUrl: document.getElementById("detailUrl"),
   detailContent: document.getElementById("detailContent"),
+  exportPane: document.getElementById("exportPane"),
+  toggleExportPane: document.getElementById("toggleExportPane"),
   selectDefaults: document.getElementById("selectDefaults"),
   selectFullFields: document.getElementById("selectFullFields"),
   includeSensitiveHeaders: document.getElementById("includeSensitiveHeaders"),
@@ -102,6 +107,11 @@ function bindEvents() {
     state.activeRequestId = "";
     render();
     setStatus("Captured requests cleared.");
+  });
+
+  els.toggleExportPane.addEventListener("click", () => {
+    state.isExportCollapsed = !state.isExportCollapsed;
+    renderExportPane();
   });
 
   els.filterToggle.addEventListener("click", () => {
@@ -426,12 +436,34 @@ function isExtensionRequest(request) {
     || String(request.url || "").startsWith("safari-web-extension://");
 }
 
+function isFailedRequest(request) {
+  const statusCode = Number(request.statusCode);
+  return !Number.isFinite(statusCode) || statusCode < 100;
+}
+
+function isClientErrorRequest(request) {
+  const statusCode = Number(request.statusCode);
+  return Number.isFinite(statusCode) && statusCode >= 400 && statusCode < 500;
+}
+
+function isServerErrorRequest(request) {
+  const statusCode = Number(request.statusCode);
+  return Number.isFinite(statusCode) && statusCode >= 500;
+}
+
+function isErrorRequest(request) {
+  return isClientErrorRequest(request) || isServerErrorRequest(request) || isFailedRequest(request);
+}
+
 function matchesStatusFilter(request) {
   if (!state.statusFilter) {
     return true;
   }
   if (state.statusFilter === "failed") {
-    return !request.statusCode || request.statusCode < 100;
+    return isFailedRequest(request);
+  }
+  if (state.statusFilter === "errors") {
+    return isErrorRequest(request);
   }
   return String(request.statusCode || "").startsWith(state.statusFilter);
 }
@@ -519,12 +551,76 @@ function render() {
   els.selectedCount.textContent = `${state.selectedIds.size} selected`;
   els.selectAll.checked = visible.length > 0 && selectedVisible.length === visible.length;
   els.selectAll.indeterminate = selectedVisible.length > 0 && selectedVisible.length < visible.length;
+  renderStatusSummary(visible);
+  renderExportPane();
   renderDetail();
+}
+
+function renderStatusSummary(requests) {
+  if (!els.statusSummary) {
+    return;
+  }
+
+  const summary = computeStatusSummary(requests);
+  els.statusSummary.innerHTML = "";
+  els.statusSummary.appendChild(createStatusChip("Errors", summary.errors, "strong", "4xx, 5xx, and failed requests"));
+  els.statusSummary.appendChild(createStatusChip("4xx", summary.clientErrors, "client", "Client error responses"));
+  els.statusSummary.appendChild(createStatusChip("5xx", summary.serverErrors, "server", "Server error responses"));
+  els.statusSummary.appendChild(createStatusChip("Failed", summary.failed, "failed", "Requests without a normal HTTP response"));
+}
+
+function createStatusChip(label, count, variant, title) {
+  const chip = document.createElement("span");
+  chip.className = `status-chip ${variant}`.trim();
+  chip.title = title;
+
+  const dot = document.createElement("span");
+  dot.className = "status-dot";
+  chip.appendChild(dot);
+
+  const text = document.createElement("span");
+  text.textContent = `${label}: ${count}`;
+  chip.appendChild(text);
+
+  return chip;
+}
+
+function computeStatusSummary(requests) {
+  const summary = {
+    clientErrors: 0,
+    serverErrors: 0,
+    failed: 0,
+    errors: 0
+  };
+
+  for (const request of requests) {
+    if (isFailedRequest(request)) {
+      summary.failed += 1;
+    } else if (isServerErrorRequest(request)) {
+      summary.serverErrors += 1;
+    } else if (isClientErrorRequest(request)) {
+      summary.clientErrors += 1;
+    }
+  }
+
+  summary.errors = summary.clientErrors + summary.serverErrors + summary.failed;
+  return summary;
+}
+
+function renderExportPane() {
+  els.content.classList.toggle("export-collapsed", state.isExportCollapsed);
+  els.exportPane.classList.toggle("collapsed", state.isExportCollapsed);
+  els.toggleExportPane.title = state.isExportCollapsed ? "Expand export panel" : "Collapse export panel";
+  els.toggleExportPane.setAttribute("aria-label", els.toggleExportPane.title);
 }
 
 function renderRow(request) {
   const tr = document.createElement("tr");
+  const statusClass = getStatusClass(request);
   tr.dataset.id = request.id;
+  if (statusClass) {
+    tr.classList.toggle(statusClass, true);
+  }
   tr.classList.toggle("selected", state.selectedIds.has(request.id));
   tr.classList.toggle("active", state.activeRequestId === request.id);
 
@@ -540,7 +636,7 @@ function renderRow(request) {
 
   appendCell(tr, request.name, request.url);
   appendCell(tr, request.method);
-  appendCell(tr, request.statusCode || request.statusText || "-");
+  appendCell(tr, request.statusCode || request.statusText || "-", null, `status-cell ${statusClass}`.trim());
   appendCell(tr, request.type || "-");
   appendCell(tr, formatBytes(request.sizeBytes));
   appendCell(tr, formatMs(request.timeMs));
@@ -548,6 +644,19 @@ function renderRow(request) {
   appendCell(tr, request.url);
 
   return tr;
+}
+
+function getStatusClass(request) {
+  if (isFailedRequest(request)) {
+    return "status-failed";
+  }
+  if (isServerErrorRequest(request)) {
+    return "status-server-error";
+  }
+  if (isClientErrorRequest(request)) {
+    return "status-client-error";
+  }
+  return "";
 }
 
 function renderDetail() {
@@ -650,8 +759,11 @@ function formatMaybeJson(value) {
   }
 }
 
-function appendCell(row, text, title) {
+function appendCell(row, text, title, className = "") {
   const td = document.createElement("td");
+  if (className) {
+    td.className = className;
+  }
   td.textContent = text == null || text === "" ? "-" : String(text);
   td.title = title || td.textContent;
   row.appendChild(td);
@@ -870,6 +982,14 @@ globalThis.NetworkExporterInternals = {
   getTypeGroup,
   getVisibleRequests,
   isExtensionRequest,
+  isFailedRequest,
+  isClientErrorRequest,
+  isServerErrorRequest,
+  isErrorRequest,
+  getStatusClass,
+  computeStatusSummary,
+  renderStatusSummary,
+  renderExportPane,
   getDetailText,
   formatHeadersDetail,
   formatPayloadDetail,

@@ -8,6 +8,9 @@ Network Exporter is a local Chrome DevTools extension for selecting a small set 
 - Captures requests shown to DevTools with `chrome.devtools.network`.
 - Supports local record/pause and clear controls.
 - Supports filtering by free text, type chips, status groups, and invert.
+- Supports an `Errors` status filter for 4xx, 5xx, and failed requests.
+- Highlights 4xx, 5xx, and failed requests with distinct row colors.
+- Shows visible-request error counts for 4xx, 5xx, and failed requests.
 - Excludes browser extension requests by default, such as `chrome-extension://...`.
 - Supports simple query filters:
   - `url:/api/users`
@@ -20,6 +23,7 @@ Network Exporter is a local Chrome DevTools extension for selecting a small set 
 - Supports clicking one request row to inspect details.
 - Supports choosing exported fields.
 - Supports `Defaults` and `Full` field presets.
+- Supports collapsing the export pane when table space is more important.
 - Copies selected requests as JSON.
 - Copies selected requests as Markdown.
 

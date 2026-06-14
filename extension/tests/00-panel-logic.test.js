@@ -43,9 +43,18 @@ class MockElement {
     this.children = [];
     this.listeners = {};
     this.textContent = "";
-    this.innerHTML = "";
+    this._innerHTML = "";
     this.checked = false;
     this.indeterminate = false;
+  }
+
+  get innerHTML() {
+    return this._innerHTML;
+  }
+
+  set innerHTML(value) {
+    this._innerHTML = value;
+    this.children = [];
   }
 
   addEventListener(type, listener) {
@@ -71,6 +80,7 @@ class MockElement {
 }
 
 const ids = [
+  "content",
   "recordToggle",
   "clearRequests",
   "filterToggle",
@@ -82,8 +92,11 @@ const ids = [
   "typeChips",
   "requestRows",
   "requestCount",
+  "statusSummary",
   "selectedCount",
   "selectAll",
+  "exportPane",
+  "toggleExportPane",
   "selectDefaults",
   "selectFullFields",
   "includeSensitiveHeaders",
@@ -198,6 +211,69 @@ assert.strictEqual(request.typeGroup, "fetch-xhr");
 assert.strictEqual(request.sizeBytes, 67);
 assert.strictEqual(request.timeMs, 149);
 assert.strictEqual(logic.isExtensionRequest(request), false);
+assert.strictEqual(logic.getStatusClass(request), "");
+
+const clientErrorRequest = logic.normalizeRequest({
+  ...entry,
+  _requestId: "123.403",
+  response: {
+    ...entry.response,
+    status: 403,
+    statusText: "Forbidden"
+  }
+});
+assert.strictEqual(logic.getStatusClass(clientErrorRequest), "status-client-error");
+
+const serverErrorRequest = logic.normalizeRequest({
+  ...entry,
+  _requestId: "123.500",
+  response: {
+    ...entry.response,
+    status: 500,
+    statusText: "Internal Server Error"
+  }
+});
+assert.strictEqual(logic.getStatusClass(serverErrorRequest), "status-server-error");
+
+const failedRequest = logic.normalizeRequest({
+  ...entry,
+  _requestId: "123.failed",
+  response: {
+    ...entry.response,
+    status: 0,
+    statusText: ""
+  }
+});
+assert.strictEqual(logic.getStatusClass(failedRequest), "status-failed");
+
+const summary = logic.computeStatusSummary([request, clientErrorRequest, serverErrorRequest, failedRequest]);
+assert.strictEqual(summary.clientErrors, 1);
+assert.strictEqual(summary.serverErrors, 1);
+assert.strictEqual(summary.failed, 1);
+assert.strictEqual(summary.errors, 3);
+logic.renderStatusSummary([request, clientErrorRequest, serverErrorRequest, failedRequest]);
+assert.strictEqual(elements.get("statusSummary").children.length, 4);
+assert.strictEqual(elements.get("statusSummary").children[0].children[1].textContent, "Errors: 3");
+
+logic.state.requests = [request, clientErrorRequest, serverErrorRequest, failedRequest];
+logic.state.statusFilter = "errors";
+logic.state.filterText = "";
+logic.state.activeType = "all";
+logic.state.invertFilter = false;
+logic.state.excludeExtensionRequests = true;
+assert.strictEqual(logic.getVisibleRequests().length, 3);
+assert.strictEqual(logic.matchesStatusFilter(request), false);
+assert.strictEqual(logic.matchesStatusFilter(clientErrorRequest), true);
+assert.strictEqual(logic.matchesStatusFilter(serverErrorRequest), true);
+assert.strictEqual(logic.matchesStatusFilter(failedRequest), true);
+logic.state.statusFilter = "";
+
+elements.get("toggleExportPane").listeners.click();
+assert.strictEqual(logic.state.isExportCollapsed, true);
+assert.ok(elements.get("content").classList.contains("export-collapsed"));
+assert.ok(elements.get("exportPane").classList.contains("collapsed"));
+elements.get("toggleExportPane").listeners.click();
+assert.strictEqual(logic.state.isExportCollapsed, false);
 
 const extensionRequest = logic.normalizeRequest({
   ...entry,
