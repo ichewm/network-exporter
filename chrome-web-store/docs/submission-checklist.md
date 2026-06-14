@@ -2,7 +2,7 @@
 
 ## Before Upload
 
-- [ ] Confirm extension is loaded locally from `outputs/network-exporter-extension`.
+- [ ] Confirm extension is loaded locally from the repository `extension/` folder.
 - [ ] Confirm DevTools shows the `Network Exporter` tab.
 - [ ] Confirm request capture works on a local test page.
 - [ ] Confirm JSON copy works.
@@ -14,7 +14,7 @@
 ## Developer Dashboard
 
 - [ ] Register or open Chrome Web Store Developer Dashboard.
-- [ ] Upload `network-exporter-0.1.0.zip`.
+- [ ] Upload `network-exporter-0.2.0.zip`.
 - [ ] Category: Developer Tools.
 - [ ] Add 128x128 icon from `listing-assets/icon-128.png`.
 - [ ] Add screenshot `listing-assets/screenshots/network-exporter-main-1280x800.png`.

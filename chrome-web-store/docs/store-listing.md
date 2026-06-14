@@ -28,9 +28,12 @@ Key features:
 - Multi-select request table
 - Request detail tabs for headers, payload, response, and metadata
 - Filters for URL text, method, status, domain, MIME type, and resource type
+- Error filtering for 4xx, 5xx, and failed requests
+- Distinct row highlighting and counts for client errors, server errors, and failed requests
 - Default exclusion for noisy browser extension requests
 - Field-level export controls
 - Defaults and Full field presets
+- Collapsible export pane for narrow DevTools layouts
 - Copy selected requests as JSON
 - Copy selected requests as Markdown
 - Sensitive headers excluded by default

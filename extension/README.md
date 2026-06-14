@@ -50,9 +50,9 @@ Detail tabs:
 Run from the workspace root:
 
 ```bash
-node --check outputs/network-exporter-extension/panel.js
-node --check outputs/network-exporter-extension/devtools.js
-node outputs/network-exporter-extension/tests/00-panel-logic.test.js
+node --check extension/panel.js
+node --check extension/devtools.js
+node extension/tests/00-panel-logic.test.js
 ```
 
 ## Install Locally
@@ -61,11 +61,7 @@ node outputs/network-exporter-extension/tests/00-panel-logic.test.js
 2. Go to `chrome://extensions`.
 3. Enable `Developer mode`.
 4. Click `Load unpacked`.
-5. Select this folder:
-
-   ```text
-   /Users/hewm/Documents/Codex/2026-06-08/chrome-dev-tools-network-capy-as/outputs/network-exporter-extension
-   ```
+5. Select the `extension/` folder in this repository.
 
 6. Open DevTools on any page.
 7. Open the `Network Exporter` DevTools tab.

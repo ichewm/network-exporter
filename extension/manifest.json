@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "Network Exporter",
   "description": "Select DevTools network requests and copy focused JSON or Markdown exports.",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "devtools_page": "devtools.html",
   "icons": {
     "16": "icons/icon-16.png",
