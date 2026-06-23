@@ -447,11 +447,11 @@ td.status-cell.status-failed {
 }
 
 .col-select {
-  width: 4%;
+  width: 44px;
 }
 
 .col-name {
-  width: 24%;
+  width: 25%;
 }
 
 .col-method {
@@ -479,7 +479,7 @@ td.status-cell.status-failed {
 }
 
 .col-url {
-  width: 15%;
+  width: 18%;
 }
 
 th:nth-child(6),
