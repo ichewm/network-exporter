@@ -11,4 +11,5 @@ Included:
 - Added a Network Exporter `Preserve log` option for retaining requests across navigations
 - Added lightweight status color indicators in the request table summary
 - Added a collapsible export pane to give the request table more room in narrow DevTools layouts
+- Removed the redundant URL table column and made request columns resize proportionally in narrow DevTools layouts
 - Kept the extension permission set unchanged
