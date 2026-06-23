@@ -83,7 +83,7 @@ function attachNetworkExporterStore(store) {
 
   captureStore = store;
   unsubscribeCaptureStore = captureStore.subscribe(applyCaptureSnapshot);
-  setStatus("Capturing requests from DevTools.");
+  setStatus("");
 }
 
 function applyCaptureSnapshot(snapshot) {
@@ -242,7 +242,7 @@ function bindEvents() {
   });
 
   els.selectDefaults.addEventListener("click", () => {
-    const defaultFields = new Set(["curlRequest", "statusCode", "responseBody", "url", "method"]);
+    const defaultFields = new Set(["curlRequest", "statusCode", "responseBody", "method"]);
     for (const input of getFieldInputs()) {
       input.checked = defaultFields.has(input.dataset.field);
     }

@@ -125,7 +125,7 @@ const fieldInputs = [
   "responseHeaders",
   "mimeType"
 ].map((field) => ({
-  checked: ["curlRequest", "statusCode", "responseBody", "url", "method"].includes(field),
+  checked: ["curlRequest", "statusCode", "responseBody", "method"].includes(field),
   dataset: { field }
 }));
 
@@ -166,12 +166,21 @@ vm.runInContext(panelSource, context, { filename: "panel.js" });
 
 const logic = context.NetworkExporterInternals;
 assert.ok(logic, "test internals should be exposed");
+assert.deepStrictEqual(
+  fieldInputs.filter((input) => input.checked).map((input) => input.dataset.field),
+  ["curlRequest", "statusCode", "responseBody", "method"]
+);
 
 for (const input of fieldInputs) {
   input.checked = false;
 }
 elements.get("selectFullFields").listeners.click();
 assert.ok(fieldInputs.every((input) => input.checked), "Full preset should select every export field");
+elements.get("selectDefaults").listeners.click();
+assert.deepStrictEqual(
+  fieldInputs.filter((input) => input.checked).map((input) => input.dataset.field),
+  ["curlRequest", "statusCode", "responseBody", "method"]
+);
 
 const entry = {
   _requestId: "123.1",

@@ -12,4 +12,5 @@ Included:
 - Added lightweight status color indicators in the request table summary
 - Added a collapsible export pane to give the request table more room in narrow DevTools layouts
 - Kept the URL table column while making all request table columns resize proportionally in narrow DevTools layouts
+- Reduced the default export fields to `curlRequest`, `statusCode`, `responseBody`, and `method`
 - Kept the extension permission set unchanged

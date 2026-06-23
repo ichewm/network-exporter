@@ -76,11 +76,11 @@ Default fields:
 - `curlRequest`
 - `statusCode`
 - `responseBody`
-- `url`
 - `method`
 
 Optional fields include:
 
+- `url`
 - `name`
 - `type`
 - `size`
