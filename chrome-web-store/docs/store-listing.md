@@ -25,6 +25,8 @@ Instead of exporting a full HAR file or copying one request at a time, select a 
 Key features:
 
 - DevTools panel for local network inspection
+- Capture starts when DevTools opens, before the custom panel is selected
+- Plugin-level Preserve log option for keeping requests across navigation
 - Multi-select request table
 - Request detail tabs for headers, payload, response, and metadata
 - Filters for URL text, method, status, domain, MIME type, and resource type

@@ -5,6 +5,8 @@
 - [ ] Confirm extension is loaded locally from the repository `extension/` folder.
 - [ ] Confirm DevTools shows the `Network Exporter` tab.
 - [ ] Confirm request capture works on a local test page.
+- [ ] Confirm requests are captured after opening DevTools before selecting the `Network Exporter` tab.
+- [ ] Confirm `Preserve log` keeps captured requests across reloads or redirects.
 - [ ] Confirm JSON copy works.
 - [ ] Confirm Markdown copy works.
 - [ ] Confirm sensitive headers are excluded by default.

@@ -5,8 +5,9 @@ Network Exporter is a local Chrome DevTools extension for selecting a small set 
 ## Current Features
 
 - Adds a `Network Exporter` tab to Chrome DevTools.
-- Captures requests shown to DevTools with `chrome.devtools.network`.
+- Captures requests with `chrome.devtools.network` as soon as DevTools opens.
 - Supports local record/pause and clear controls.
+- Supports a plugin-level `Preserve log` option for keeping captured requests across navigations.
 - Supports filtering by free text, type chips, status groups, and invert.
 - Supports an `Errors` status filter for 4xx, 5xx, and failed requests.
 - Highlights 4xx, 5xx, and failed requests with distinct row colors.
@@ -52,6 +53,7 @@ Run from the workspace root:
 ```bash
 node --check extension/panel.js
 node --check extension/devtools.js
+node --check extension/shared.js
 node extension/tests/00-panel-logic.test.js
 ```
 
@@ -65,7 +67,7 @@ node extension/tests/00-panel-logic.test.js
 
 6. Open DevTools on any page.
 7. Open the `Network Exporter` DevTools tab.
-8. Reload the page if earlier requests are missing.
+8. Reload the page or run the workflow you want to capture.
 
 ## Export Fields
 
@@ -98,5 +100,7 @@ Sensitive headers such as `Authorization`, `Cookie`, and `Set-Cookie` are exclud
 - The extension does not upload data anywhere.
 - It does not use the `debugger` permission.
 - It does not modify Chrome's built-in Network panel.
+- Open DevTools before running the workflow you want to capture. The extension starts listening when DevTools opens, even before the `Network Exporter` tab is selected.
+- Enable `Preserve log` in Network Exporter when you want captured requests to survive reloads, redirects, or other navigations.
 - Response body capture depends on DevTools seeing the request finish. If DevTools was opened after a request happened, reload the page.
 - Existing requests loaded from `getHAR()` may not always include response body content; newly finished requests use `request.getContent()`.

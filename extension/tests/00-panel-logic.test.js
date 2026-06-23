@@ -6,6 +6,8 @@ const path = require("path");
 const vm = require("vm");
 
 const root = path.resolve(__dirname, "..");
+const sharedSource = fs.readFileSync(path.join(root, "shared.js"), "utf8");
+const devtoolsSource = fs.readFileSync(path.join(root, "devtools.js"), "utf8");
 const panelSource = fs.readFileSync(path.join(root, "panel.js"), "utf8");
 
 class MockClassList {
@@ -86,6 +88,7 @@ const ids = [
   "filterToggle",
   "filterPanel",
   "filterInput",
+  "preserveLog",
   "invertFilter",
   "excludeExtensionRequests",
   "statusFilter",
@@ -158,6 +161,7 @@ const context = {
 
 context.globalThis = context;
 vm.createContext(context);
+vm.runInContext(sharedSource, context, { filename: "shared.js" });
 vm.runInContext(panelSource, context, { filename: "panel.js" });
 
 const logic = context.NetworkExporterInternals;
@@ -212,6 +216,49 @@ assert.strictEqual(request.sizeBytes, 67);
 assert.strictEqual(request.timeMs, 149);
 assert.strictEqual(logic.isExtensionRequest(request), false);
 assert.strictEqual(logic.getStatusClass(request), "");
+
+const panelStoreCalls = {
+  clear: 0,
+  preserveLog: [],
+  recording: []
+};
+const panelStore = {
+  clear() {
+    panelStoreCalls.clear += 1;
+  },
+  setPreserveLog(value) {
+    panelStoreCalls.preserveLog.push(value);
+  },
+  setRecording(value) {
+    panelStoreCalls.recording.push(value);
+  },
+  subscribe(listener) {
+    listener({
+      requests: [request],
+      isRecording: true,
+      preserveLog: false
+    });
+
+    return () => undefined;
+  }
+};
+
+logic.attachNetworkExporterStore(panelStore);
+assert.strictEqual(logic.state.requests.length, 1);
+assert.strictEqual(logic.state.requests[0].url, "https://example.com/api/token");
+assert.strictEqual(elements.get("preserveLog").checked, false);
+elements.get("preserveLog").checked = true;
+elements.get("preserveLog").listeners.change();
+assert.deepStrictEqual(panelStoreCalls.preserveLog, [true]);
+elements.get("recordToggle").listeners.click();
+assert.deepStrictEqual(panelStoreCalls.recording, [false]);
+elements.get("clearRequests").listeners.click();
+assert.strictEqual(panelStoreCalls.clear, 1);
+logic.applyCaptureSnapshot({
+  requests: [request],
+  isRecording: true,
+  preserveLog: false
+});
 
 const clientErrorRequest = logic.normalizeRequest({
   ...entry,
@@ -360,12 +407,6 @@ assert.strictEqual(decoded, "hello 中文");
 const markdown = logic.toMarkdown([{ responseBody: "contains ``` fence" }], ["responseBody"]);
 assert.ok(markdown.includes("````\ncontains ``` fence\n````"));
 
-const devtoolsListeners = [];
-const devtoolsElements = new Map(ids.map((id) => [id, new MockElement(id)]));
-const devtoolsFieldInputs = fieldInputs.map((input) => ({
-  checked: input.checked,
-  dataset: { ...input.dataset }
-}));
 const devtoolsEntry = {
   ...entry,
   _requestId: "123.2",
@@ -399,17 +440,28 @@ const finishedEntry = {
     callback("{\"live\":true}", "");
   }
 };
+const afterNavigationEntry = {
+  ...finishedEntry,
+  _requestId: "123.4",
+  request: {
+    ...finishedEntry.request,
+    url: "https://example.com/api/after-navigation"
+  }
+};
+const pausedEntry = {
+  ...finishedEntry,
+  _requestId: "123.5",
+  request: {
+    ...finishedEntry.request,
+    url: "https://example.com/api/paused"
+  }
+};
+const devtoolsListeners = [];
+const navigatedListeners = [];
+let panelShownListener = null;
 const devtoolsContext = {
   console,
-  TextDecoder,
-  Uint8Array,
   URL,
-  atob: (value) => Buffer.from(value, "base64").toString("binary"),
-  navigator: {
-    clipboard: {
-      writeText: async () => undefined
-    }
-  },
   chrome: {
     devtools: {
       network: {
@@ -420,41 +472,71 @@ const devtoolsContext = {
           addListener(listener) {
             devtoolsListeners.push(listener);
           }
+        },
+        onNavigated: {
+          addListener(listener) {
+            navigatedListeners.push(listener);
+          }
+        }
+      },
+      panels: {
+        create(name, icon, page, callback) {
+          assert.strictEqual(name, "Network Exporter");
+          assert.strictEqual(page, "panel.html");
+          callback({
+            onShown: {
+              addListener(listener) {
+                panelShownListener = listener;
+              }
+            }
+          });
         }
       }
-    }
-  },
-  document: {
-    getElementById(id) {
-      if (!devtoolsElements.has(id)) {
-        devtoolsElements.set(id, new MockElement(id));
-      }
-      return devtoolsElements.get(id);
-    },
-    createElement(tagName) {
-      return new MockElement(tagName);
-    },
-    querySelectorAll(selector) {
-      if (selector === "[data-field]") {
-        return devtoolsFieldInputs;
-      }
-      return [];
     }
   }
 };
 
 devtoolsContext.globalThis = devtoolsContext;
 vm.createContext(devtoolsContext);
-vm.runInContext(panelSource, devtoolsContext, { filename: "panel-devtools.js" });
-const devtoolsLogic = devtoolsContext.NetworkExporterInternals;
-assert.strictEqual(devtoolsLogic.state.requests.length, 1);
-assert.strictEqual(devtoolsLogic.state.requests[0].url, "https://example.com/api/from-har");
+vm.runInContext(sharedSource, devtoolsContext, { filename: "shared-devtools.js" });
+vm.runInContext(devtoolsSource, devtoolsContext, { filename: "devtools.js" });
+const captureStore = devtoolsContext.NetworkExporterCaptureStore;
+let snapshot = captureStore.getSnapshot();
+assert.strictEqual(snapshot.requests.length, 1);
+assert.strictEqual(snapshot.requests[0].url, "https://example.com/api/from-har");
 assert.strictEqual(devtoolsListeners.length, 1);
+assert.strictEqual(navigatedListeners.length, 1);
+assert.ok(panelShownListener);
 
 devtoolsListeners[0](finishedEntry);
-assert.strictEqual(devtoolsLogic.state.requests.length, 2);
-const liveRequest = devtoolsLogic.state.requests.find((item) => item.url === "https://example.com/api/live");
+snapshot = captureStore.getSnapshot();
+assert.strictEqual(snapshot.requests.length, 2);
+const liveRequest = snapshot.requests.find((item) => item.url === "https://example.com/api/live");
 assert.ok(liveRequest);
 assert.strictEqual(liveRequest.responseBody, "{\"live\":true}");
+
+navigatedListeners[0]("https://example.com/next");
+snapshot = captureStore.getSnapshot();
+assert.strictEqual(snapshot.requests.length, 0);
+
+devtoolsListeners[0](afterNavigationEntry);
+captureStore.setPreserveLog(true);
+navigatedListeners[0]("https://example.com/preserved");
+snapshot = captureStore.getSnapshot();
+assert.strictEqual(snapshot.requests.length, 1);
+assert.strictEqual(snapshot.requests[0].url, "https://example.com/api/after-navigation");
+
+captureStore.setRecording(false);
+devtoolsListeners[0](pausedEntry);
+snapshot = captureStore.getSnapshot();
+assert.strictEqual(snapshot.requests.length, 1);
+
+const panelWindow = {
+  attachNetworkExporterStore(store) {
+    this.store = store;
+  }
+};
+panelShownListener(panelWindow);
+assert.strictEqual(panelWindow.store, captureStore);
 
 console.log("panel-logic-ok");

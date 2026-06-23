@@ -1,19 +1,14 @@
 "use strict";
 
-const SENSITIVE_HEADER_NAMES = new Set([
-  "authorization",
-  "cookie",
-  "set-cookie",
-  "x-api-key",
-  "x-auth-token",
-  "x-csrf-token",
-  "xsrf-token"
-]);
+const SENSITIVE_HEADER_NAMES = NetworkExporterShared.SENSITIVE_HEADER_NAMES;
+const requestNormalizer = NetworkExporterShared.createRequestNormalizer();
+const getTypeGroup = NetworkExporterShared.getTypeGroup;
 
 const state = {
   requests: [],
   selectedIds: new Set(),
   isRecording: true,
+  preserveLog: false,
   isExportCollapsed: false,
   activeType: "all",
   activeRequestId: "",
@@ -24,7 +19,8 @@ const state = {
   statusFilter: ""
 };
 
-let nextRequestSequence = 0;
+let captureStore = null;
+let unsubscribeCaptureStore = null;
 
 const els = {
   content: document.getElementById("content"),
@@ -33,6 +29,7 @@ const els = {
   filterToggle: document.getElementById("filterToggle"),
   filterPanel: document.getElementById("filterPanel"),
   filterInput: document.getElementById("filterInput"),
+  preserveLog: document.getElementById("preserveLog"),
   invertFilter: document.getElementById("invertFilter"),
   excludeExtensionRequests: document.getElementById("excludeExtensionRequests"),
   statusFilter: document.getElementById("statusFilter"),
@@ -61,52 +58,92 @@ init();
 function init() {
   bindEvents();
 
-  if (!hasDevToolsNetworkApi()) {
-    render();
-    setStatus("Open this panel inside Chrome DevTools to capture requests.");
+  if (globalThis.NetworkExporterPendingStore) {
+    attachNetworkExporterStore(globalThis.NetworkExporterPendingStore);
     return;
   }
 
-  chrome.devtools.network.onRequestFinished.addListener((request) => {
-    if (!state.isRecording) {
-      return;
-    }
-
-    const normalized = normalizeRequest(request);
-    upsertRequest(normalized);
-
-    request.getContent((content, encoding) => {
-      const target = state.requests.find((item) => item.id === normalized.id);
-      if (!target) {
-        return;
-      }
-
-      target.responseBody = content || "";
-      target.responseEncoding = encoding || "";
-      render();
-    });
-  });
-
-  hydrateFromHar();
+  render();
+  updateCaptureControls();
+  setStatus(hasDevToolsApi() ? "Waiting for DevTools capture bridge." : "Open this panel inside Chrome DevTools to capture requests.");
 }
 
-function hasDevToolsNetworkApi() {
-  return Boolean(globalThis.chrome?.devtools?.network);
+function hasDevToolsApi() {
+  return Boolean(globalThis.chrome?.devtools);
+}
+
+function attachNetworkExporterStore(store) {
+  if (!store || captureStore === store) {
+    return;
+  }
+
+  if (unsubscribeCaptureStore) {
+    unsubscribeCaptureStore();
+  }
+
+  captureStore = store;
+  unsubscribeCaptureStore = captureStore.subscribe(applyCaptureSnapshot);
+  setStatus("Capturing requests from DevTools.");
+}
+
+function applyCaptureSnapshot(snapshot) {
+  const nextRequests = Array.isArray(snapshot.requests) ? snapshot.requests : [];
+  const nextIds = new Set(nextRequests.map((request) => request.id));
+
+  state.requests = nextRequests;
+  state.isRecording = Boolean(snapshot.isRecording);
+  state.preserveLog = Boolean(snapshot.preserveLog);
+
+  for (const selectedId of Array.from(state.selectedIds)) {
+    if (!nextIds.has(selectedId)) {
+      state.selectedIds.delete(selectedId);
+    }
+  }
+
+  if (state.activeRequestId && !nextIds.has(state.activeRequestId)) {
+    state.activeRequestId = "";
+  }
+
+  updateCaptureControls();
+  render();
+}
+
+function updateCaptureControls() {
+  els.recordToggle.classList.toggle("active", state.isRecording);
+  els.recordToggle.title = state.isRecording ? "Pause request recording" : "Record requests";
+  els.recordToggle.setAttribute("aria-label", els.recordToggle.title);
+  els.preserveLog.checked = state.preserveLog;
 }
 
 function bindEvents() {
   els.recordToggle.addEventListener("click", () => {
-    state.isRecording = !state.isRecording;
-    els.recordToggle.classList.toggle("active", state.isRecording);
+    const nextRecording = !state.isRecording;
+    state.isRecording = nextRecording;
+    updateCaptureControls();
+    if (captureStore) {
+      captureStore.setRecording(nextRecording);
+    }
     setStatus(state.isRecording ? "Recording enabled." : "Recording paused.");
   });
 
   els.clearRequests.addEventListener("click", () => {
-    state.requests = [];
-    state.selectedIds.clear();
-    state.activeRequestId = "";
-    render();
+    if (captureStore) {
+      captureStore.clear();
+    } else {
+      state.requests = [];
+      state.selectedIds.clear();
+      state.activeRequestId = "";
+      render();
+    }
     setStatus("Captured requests cleared.");
+  });
+
+  els.preserveLog.addEventListener("change", () => {
+    state.preserveLog = els.preserveLog.checked;
+    if (captureStore) {
+      captureStore.setPreserveLog(state.preserveLog);
+    }
+    setStatus(state.preserveLog ? "Preserve log enabled." : "Preserve log disabled. New navigations clear captured requests.");
   });
 
   els.toggleExportPane.addEventListener("click", () => {
@@ -228,192 +265,8 @@ function bindEvents() {
   });
 }
 
-function hydrateFromHar() {
-  chrome.devtools.network.getHAR((harLog) => {
-    const entries = harLog?.entries || [];
-    for (const entry of entries) {
-      upsertRequest(normalizeRequest(entry));
-    }
-    render();
-  });
-}
-
 function normalizeRequest(entry) {
-  const request = entry.request || {};
-  const response = entry.response || {};
-  const timings = entry.timings || {};
-  const url = request.url || "";
-  const method = request.method || "";
-  const status = Number.isFinite(response.status) ? response.status : null;
-  const time = typeof entry.time === "number" ? entry.time : sumTimings(timings);
-  const startedDateTime = entry.startedDateTime || "";
-  const resourceType = getResourceType(entry);
-
-  return {
-    id: makeRequestId(entry),
-    name: getName(url),
-    url,
-    method,
-    statusCode: status,
-    statusText: response.statusText || "",
-    type: resourceType,
-    typeGroup: getTypeGroup(resourceType, response.content?.mimeType || ""),
-    mimeType: response.content?.mimeType || "",
-    sizeBytes: getSizeBytes(entry),
-    timeMs: Number.isFinite(time) ? time : null,
-    initiator: getInitiator(entry),
-    startedDateTime,
-    requestHeaders: normalizeHeaders(request.headers || []),
-    responseHeaders: normalizeHeaders(response.headers || []),
-    requestBody: request.postData?.text || "",
-    responseBody: response.content?.text || "",
-    responseEncoding: response.content?.encoding || "",
-    raw: entry
-  };
-}
-
-function makeRequestId(entry) {
-  if (entry._requestId) {
-    return `chrome:${entry._requestId}`;
-  }
-
-  const request = entry.request || {};
-  const response = entry.response || {};
-  const started = entry.startedDateTime || "";
-  const signature = [
-    started,
-    request.method || "",
-    request.url || "",
-    response.status || "",
-    entry.time || ""
-  ].join("|");
-  nextRequestSequence += 1;
-  return `fallback:${nextRequestSequence}:${signature}`;
-}
-
-function getName(url) {
-  if (!url) {
-    return "(unknown)";
-  }
-
-  try {
-    const parsed = new URL(url);
-    const lastPath = parsed.pathname.split("/").filter(Boolean).pop();
-    return lastPath ? `${lastPath}${parsed.search}` : parsed.hostname;
-  } catch {
-    return url;
-  }
-}
-
-function getResourceType(entry) {
-  const rawType = entry._resourceType || entry.type || entry.resourceType || "";
-  if (rawType) {
-    return String(rawType).toLowerCase();
-  }
-
-  const mimeType = entry.response?.content?.mimeType || "";
-  return guessTypeFromMime(mimeType);
-}
-
-function guessTypeFromMime(mimeType) {
-  const mime = mimeType.toLowerCase();
-  if (mime.includes("html")) return "document";
-  if (mime.includes("css")) return "stylesheet";
-  if (mime.includes("javascript") || mime.includes("ecmascript")) return "script";
-  if (mime.startsWith("image/")) return "image";
-  if (mime.startsWith("font/")) return "font";
-  if (mime.startsWith("audio/") || mime.startsWith("video/")) return "media";
-  if (mime.includes("manifest")) return "manifest";
-  if (mime.includes("wasm")) return "wasm";
-  if (mime.includes("json") || mime.includes("xml")) return "fetch";
-  return "other";
-}
-
-function getTypeGroup(type, mimeType) {
-  const normalized = String(type || "").toLowerCase();
-  if (["xhr", "fetch"].includes(normalized)) return "fetch-xhr";
-  if (["document", "doc"].includes(normalized)) return "doc";
-  if (["stylesheet", "css"].includes(normalized)) return "css";
-  if (["script", "js"].includes(normalized)) return "js";
-  if (["font"].includes(normalized)) return "font";
-  if (["image", "img"].includes(normalized)) return "img";
-  if (["media", "audio", "video"].includes(normalized)) return "media";
-  if (["manifest"].includes(normalized)) return "manifest";
-  if (["websocket", "socket", "webtransport"].includes(normalized)) return "socket";
-  if (["wasm"].includes(normalized)) return "wasm";
-
-  const guessed = guessTypeFromMime(mimeType);
-  if (guessed === "document") return "doc";
-  if (guessed === "stylesheet") return "css";
-  if (guessed === "script") return "js";
-  if (guessed === "image") return "img";
-  if (guessed === "fetch") return "fetch-xhr";
-  if (["font", "media", "manifest", "wasm"].includes(guessed)) return guessed;
-  return "other";
-}
-
-function getSizeBytes(entry) {
-  const response = entry.response || {};
-  const bodySize = Number(response.bodySize);
-  const headersSize = Number(response.headersSize);
-  const contentSize = Number(response.content?.size);
-
-  if (Number.isFinite(bodySize) && bodySize >= 0) {
-    return bodySize + (Number.isFinite(headersSize) && headersSize > 0 ? headersSize : 0);
-  }
-  if (Number.isFinite(contentSize) && contentSize >= 0) {
-    return contentSize;
-  }
-  return null;
-}
-
-function getInitiator(entry) {
-  const initiator = entry._initiator || entry.initiator;
-  if (!initiator) {
-    return "";
-  }
-  if (typeof initiator === "string") {
-    return initiator;
-  }
-  if (initiator.url) {
-    const line = initiator.lineNumber != null ? `:${initiator.lineNumber}` : "";
-    return `${getName(initiator.url)}${line}`;
-  }
-  if (initiator.stack?.callFrames?.length) {
-    const frame = initiator.stack.callFrames[0];
-    const line = frame.lineNumber != null ? `:${frame.lineNumber}` : "";
-    return `${getName(frame.url || frame.functionName || "script")}${line}`;
-  }
-  return initiator.type || "";
-}
-
-function normalizeHeaders(headers) {
-  return headers.map((header) => ({
-    name: header.name || "",
-    value: header.value || ""
-  }));
-}
-
-function sumTimings(timings) {
-  const values = Object.values(timings || {}).filter((value) => Number.isFinite(value) && value > 0);
-  return values.length ? values.reduce((total, value) => total + value, 0) : null;
-}
-
-function upsertRequest(request) {
-  const index = state.requests.findIndex((item) => item.id === request.id);
-  if (index === -1) {
-    state.requests.push(request);
-    if (!state.activeRequestId) {
-      state.activeRequestId = request.id;
-    }
-  } else {
-    state.requests[index] = {
-      ...state.requests[index],
-      ...request,
-      responseBody: request.responseBody || state.requests[index].responseBody,
-      responseEncoding: request.responseEncoding || state.requests[index].responseEncoding
-    };
-  }
+  return requestNormalizer.normalizeRequest(entry);
 }
 
 function getVisibleRequests() {
@@ -976,8 +829,12 @@ function setStatus(message) {
   els.statusMessage.textContent = message;
 }
 
+globalThis.attachNetworkExporterStore = attachNetworkExporterStore;
+
 globalThis.NetworkExporterInternals = {
   state,
+  attachNetworkExporterStore,
+  applyCaptureSnapshot,
   normalizeRequest,
   getTypeGroup,
   getVisibleRequests,

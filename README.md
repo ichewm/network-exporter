@@ -7,6 +7,8 @@ It adds a `Network Exporter` tab to DevTools so developers can select a small se
 ## Features
 
 - DevTools panel for local network inspection
+- Capture starts when DevTools opens, before the custom panel is selected
+- Plugin-level Preserve log option for keeping requests across navigation
 - Multi-select request table
 - Single-request details for headers, payload, response, and metadata
 - Filters for URL text, method, status, domain, MIME type, and resource type
@@ -29,7 +31,7 @@ It adds a `Network Exporter` tab to DevTools so developers can select a small se
 5. Select the `extension/` folder in this repository.
 6. Open DevTools on a page.
 7. Open the `Network Exporter` tab.
-8. Reload the page to capture requests.
+8. Reload the page or run the workflow you want to capture.
 
 ## Chrome Web Store Package
 
@@ -62,6 +64,7 @@ Run from the repository root:
 ```bash
 node --check extension/panel.js
 node --check extension/devtools.js
+node --check extension/shared.js
 node extension/tests/00-panel-logic.test.js
 ```
 
