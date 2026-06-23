@@ -447,35 +447,39 @@ td.status-cell.status-failed {
 }
 
 .col-select {
-  width: 5%;
+  width: 4%;
 }
 
 .col-name {
-  width: 30%;
+  width: 24%;
 }
 
 .col-method {
-  width: 10%;
+  width: 8%;
 }
 
 .col-status {
-  width: 10%;
+  width: 8%;
 }
 
 .col-type {
-  width: 15%;
+  width: 12%;
 }
 
 .col-size {
-  width: 11%;
+  width: 9%;
 }
 
 .col-time {
-  width: 10%;
+  width: 8%;
 }
 
 .col-initiator {
-  width: 9%;
+  width: 12%;
+}
+
+.col-url {
+  width: 15%;
 }
 
 th:nth-child(6),

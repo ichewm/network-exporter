@@ -494,6 +494,7 @@ function renderRow(request) {
   appendCell(tr, formatBytes(request.sizeBytes));
   appendCell(tr, formatMs(request.timeMs));
   appendCell(tr, request.initiator || "-");
+  appendCell(tr, request.url);
 
   return tr;
 }
