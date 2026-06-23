@@ -520,7 +520,7 @@ td:nth-child(7) {
 }
 
 .detail-title {
-  flex: 1 1 260px;
+  flex: 1 1 360px;
   min-width: 0;
   display: grid;
   gap: 2px;
@@ -539,11 +539,10 @@ td:nth-child(7) {
 }
 
 .detail-tabs {
-  display: flex;
-  flex: 0 1 auto;
-  flex-wrap: wrap;
+  display: grid;
+  flex: 1 1 360px;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 6px;
-  justify-content: flex-end;
   min-width: 0;
   max-width: 100%;
   overflow: visible;
@@ -757,6 +756,10 @@ td:nth-child(7) {
   .detail-header {
     align-items: flex-start;
     flex-direction: column;
+  }
+
+  .detail-tabs {
+    width: 100%;
   }
 
   .preset-actions {
