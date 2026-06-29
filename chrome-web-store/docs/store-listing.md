@@ -26,7 +26,7 @@ Key features:
 
 - DevTools panel for local network inspection
 - Capture starts when DevTools opens, before the custom panel is selected
-- Plugin-level Preserve log option for keeping requests across navigation
+- Plugin-level Preserve log option for keeping requests across reloads, redirects, and navigations
 - Multi-select request table
 - Request detail tabs for headers, payload, response, and metadata
 - Filters for URL text, method, status, domain, MIME type, and resource type
@@ -35,12 +35,13 @@ Key features:
 - Default exclusion for noisy browser extension requests
 - Field-level export controls
 - Defaults and Full field presets
-- Collapsible export pane for narrow DevTools layouts
+- Responsive request table and export pane for narrow DevTools layouts
 - Copy selected requests as JSON
 - Copy selected requests as Markdown
+- Copy feedback shows payload size and an estimated token count, color-coded by context budget so you can see whether the export fits your model
 - Sensitive headers excluded by default
 
-Network Exporter is designed for debugging API workflows, preparing bug reports, sharing focused request examples, and pasting compact context into development tools.
+Network Exporter is designed for debugging API workflows, preparing bug reports, sharing focused request examples, and pasting compact context into LLMs and development tools.
 
 Privacy and security:
 
