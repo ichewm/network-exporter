@@ -690,7 +690,48 @@ td:nth-child(7) {
   min-height: 18px;
   margin: 10px 0 0;
   color: var(--muted);
+  line-height: 1.9;
   overflow-wrap: anywhere;
+}
+
+.metric-chip {
+  display: inline-flex;
+  align-items: center;
+  height: 19px;
+  margin: 0 1px;
+  padding: 0 6px;
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  background: var(--panel);
+  color: var(--text);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+  vertical-align: middle;
+}
+
+.metric-chip.tier-good {
+  color: #1f6b3a;
+  border-color: #9bd9b0;
+  background: #e7f6ec;
+}
+
+.metric-chip.tier-warn {
+  color: #7a5200;
+  border-color: #f0cf80;
+  background: #fdf3dc;
+}
+
+.metric-chip.tier-hot {
+  color: #8a3a00;
+  border-color: #f3b483;
+  background: #fbe9d6;
+}
+
+.metric-chip.tier-bad {
+  color: #7a0f0a;
+  border-color: #f1a39c;
+  background: #fbe3df;
 }
 
 @media (max-width: 980px) {

@@ -132,6 +132,7 @@ const fieldInputs = [
 const context = {
   console,
   TextDecoder,
+  TextEncoder,
   Uint8Array,
   URL,
   atob: (value) => Buffer.from(value, "base64").toString("binary"),
@@ -549,3 +550,32 @@ panelShownListener(panelWindow);
 assert.strictEqual(panelWindow.store, captureStore);
 
 console.log("panel-logic-ok");
+
+assert.strictEqual(context.NetworkExporterShared.getByteLength(""), 0);
+assert.strictEqual(context.NetworkExporterShared.getByteLength("abc"), 3);
+assert.strictEqual(context.NetworkExporterShared.getByteLength("\u4e2d"), 3, "UTF-8 CJK char should be 3 bytes");
+
+assert.strictEqual(context.NetworkExporterShared.estimateTokens(""), 0);
+assert.strictEqual(context.NetworkExporterShared.estimateTokens("hi"), 1, "short word should be one token");
+assert.ok(
+  context.NetworkExporterShared.estimateTokens("curl 'https://example.com/api/v2/users?page=1") > 4,
+  "a structured curl line should produce several tokens"
+);
+assert.ok(
+  context.NetworkExporterShared.estimateTokens("short text") <
+    context.NetworkExporterShared.estimateTokens("short text " + "a".repeat(100)),
+  "adding a long token should increase the estimate"
+);
+assert.ok(context.NetworkExporterShared.estimateTokens(JSON.stringify({ a: 1, b: 2 }, null, 2)) > 0);
+
+const getTokenTier = context.NetworkExporterInternals.getTokenTier;
+assert.strictEqual(getTokenTier(0), "tier-good");
+assert.strictEqual(getTokenTier(999), "tier-good");
+assert.strictEqual(getTokenTier(1000), "tier-warn");
+assert.strictEqual(getTokenTier(7999), "tier-warn");
+assert.strictEqual(getTokenTier(8000), "tier-hot");
+assert.strictEqual(getTokenTier(15999), "tier-hot");
+assert.strictEqual(getTokenTier(16000), "tier-bad");
+assert.strictEqual(getTokenTier(50000), "tier-bad");
+
+console.log("copy-metrics-ok");

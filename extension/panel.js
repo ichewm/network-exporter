@@ -652,12 +652,41 @@ async function copyExport(format) {
   const rows = selected.map((request) => buildExportObject(request, fields));
   const text = format === "markdown" ? toMarkdown(rows, fields) : JSON.stringify(rows, null, 2);
 
+  const byteLength = NetworkExporterShared.getByteLength(text);
+  const tokenCount = NetworkExporterShared.estimateTokens(text);
+
   try {
     await navigator.clipboard.writeText(text);
-    setStatus(`Copied ${selected.length} request${selected.length === 1 ? "" : "s"} as ${format}.`);
+    renderCopyResult(selected.length, format, byteLength, tokenCount);
   } catch (error) {
     setStatus(`Copy failed: ${error.message}`);
   }
+}
+
+function renderCopyResult(selectedCount, format, byteLength, tokenCount) {
+  const host = els.statusMessage;
+  host.textContent = "";
+
+  host.appendChild(document.createTextNode("Copied "));
+  host.appendChild(createMetricChip(`${selectedCount} request${selectedCount === 1 ? "" : "s"}`));
+  host.appendChild(document.createTextNode(` as ${format} · `));
+  host.appendChild(createMetricChip(formatBytes(byteLength)));
+  host.appendChild(document.createTextNode(" · "));
+  host.appendChild(createMetricChip(`~${tokenCount.toLocaleString()} tokens`, getTokenTier(tokenCount)));
+}
+
+function createMetricChip(label, variant) {
+  const chip = document.createElement("span");
+  chip.className = variant ? `metric-chip ${variant}` : "metric-chip";
+  chip.textContent = label;
+  return chip;
+}
+
+function getTokenTier(tokenCount) {
+  if (tokenCount < 1000) return "tier-good";
+  if (tokenCount < 8000) return "tier-warn";
+  if (tokenCount < 16000) return "tier-hot";
+  return "tier-bad";
 }
 
 function buildExportObject(request, fields, options = {}) {
@@ -838,6 +867,10 @@ globalThis.NetworkExporterInternals = {
   normalizeRequest,
   getTypeGroup,
   getVisibleRequests,
+  getByteLength: NetworkExporterShared.getByteLength,
+  estimateTokens: NetworkExporterShared.estimateTokens,
+  getTokenTier,
+  createMetricChip,
   isExtensionRequest,
   isFailedRequest,
   isClientErrorRequest,

@@ -16,7 +16,7 @@
 ## Developer Dashboard
 
 - [ ] Register or open Chrome Web Store Developer Dashboard.
-- [ ] Upload `network-exporter-0.2.1.zip`.
+- [ ] Upload `network-exporter-0.3.0.zip`.
 - [ ] Category: Developer Tools.
 - [ ] Add 128x128 icon from `listing-assets/icon-128.png`.
 - [ ] Add screenshot `listing-assets/screenshots/network-exporter-main-1280x800.png`.

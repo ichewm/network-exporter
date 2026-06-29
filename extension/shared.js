@@ -179,6 +179,31 @@
     return values.length ? values.reduce((total, value) => total + value, 0) : null;
   }
 
+  const TOKEN_SPLIT_REGEX = /[^\s,{}()\[\]:;"'`]+|[\s,{}()\[\]:;"'`]/g;
+
+  function getByteLength(text) {
+    if (!text) {
+      return 0;
+    }
+    return new TextEncoder().encode(text).length;
+  }
+
+  function estimateTokens(text) {
+    if (!text) {
+      return 0;
+    }
+
+    let count = 0;
+    const tokens = text.match(TOKEN_SPLIT_REGEX) || [];
+    for (const token of tokens) {
+      if (/^\s+$/.test(token)) {
+        continue;
+      }
+      count += token.length <= 4 ? 1 : Math.ceil(token.length / 4);
+    }
+    return count;
+  }
+
   function isFailedRequest(request) {
     const statusCode = Number(request.statusCode);
     return !Number.isFinite(statusCode) || statusCode < 100;
@@ -203,6 +228,8 @@
     createRequestNormalizer,
     getName,
     getTypeGroup,
+    getByteLength,
+    estimateTokens,
     isFailedRequest,
     isClientErrorRequest,
     isServerErrorRequest,
