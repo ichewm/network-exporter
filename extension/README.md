@@ -104,3 +104,4 @@ Sensitive headers such as `Authorization`, `Cookie`, and `Set-Cookie` are exclud
 - Enable `Preserve log` in Network Exporter when you want captured requests to survive reloads, redirects, or other navigations.
 - Response body capture depends on DevTools seeing the request finish. If DevTools was opened after a request happened, reload the page.
 - Existing requests loaded from `getHAR()` may not always include response body content; newly finished requests use `request.getContent()`.
+- Changing any filter (type chip, status, search, invert, or extension exclusion) clears the current selection.

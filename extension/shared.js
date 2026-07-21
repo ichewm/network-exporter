@@ -11,6 +11,67 @@
     "xsrf-token"
   ]);
 
+  const MAX_EXPORT_BODY_BYTES = 256 * 1024;
+  const MAX_STORED_BODY_BYTES = 5 * 1024 * 1024;
+
+  const BINARY_MIME_PREFIXES = [
+    "image/",
+    "font/",
+    "audio/",
+    "video/",
+    "application/octet-stream",
+    "application/wasm",
+    "application/zip",
+    "application/gzip",
+    "application/x-gzip",
+    "application/x-bzip",
+    "application/x-bzip2",
+    "application/x-tar",
+    "application/x-7z-compressed",
+    "application/x-rar-compressed",
+    "application/pdf"
+  ];
+
+  function isLikelyBinaryMimeType(mimeType) {
+    const mime = String(mimeType || "").toLowerCase();
+    if (!mime) {
+      return false;
+    }
+    return BINARY_MIME_PREFIXES.some((prefix) => mime.startsWith(prefix));
+  }
+
+  function getByteLengthLocal(text) {
+    if (!text) {
+      return 0;
+    }
+    return new TextEncoder().encode(text).length;
+  }
+
+  function truncateBody(text, maxBytes) {
+    const limit = Number.isFinite(maxBytes) && maxBytes > 0 ? maxBytes : MAX_EXPORT_BODY_BYTES;
+    const value = text == null ? "" : String(text);
+    const byteLength = getByteLengthLocal(value);
+    if (byteLength <= limit) {
+      return value;
+    }
+
+    const encoder = new TextEncoder();
+    const decoder = new TextDecoder("utf-8", { fatal: false });
+    const bytes = encoder.encode(value);
+    const sliced = bytes.subarray(0, limit);
+    const decoded = decoder.decode(sliced, { stream: true });
+    return `${decoded}\n... [truncated, original ${byteLength.toLocaleString()} bytes]`;
+  }
+
+  function clampStoredBody(text) {
+    const value = text == null ? "" : String(text);
+    const byteLength = getByteLengthLocal(value);
+    if (byteLength <= MAX_STORED_BODY_BYTES) {
+      return value;
+    }
+    return truncateBody(value, MAX_STORED_BODY_BYTES);
+  }
+
   function createRequestNormalizer() {
     let nextRequestSequence = 0;
 
@@ -225,6 +286,8 @@
 
   global.NetworkExporterShared = {
     SENSITIVE_HEADER_NAMES,
+    MAX_EXPORT_BODY_BYTES,
+    MAX_STORED_BODY_BYTES,
     createRequestNormalizer,
     getName,
     getTypeGroup,
@@ -233,6 +296,9 @@
     isFailedRequest,
     isClientErrorRequest,
     isServerErrorRequest,
-    isErrorRequest
+    isErrorRequest,
+    isLikelyBinaryMimeType,
+    truncateBody,
+    clampStoredBody
   };
 })(globalThis);

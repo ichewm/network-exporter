@@ -1,6 +1,38 @@
 "use strict";
 
+function t(key, ...args) {
+  try {
+    const chromeRef = globalThis.chrome;
+    if (chromeRef?.i18n?.getMessage) {
+      return chromeRef.i18n.getMessage(key, args) || key;
+    }
+  } catch {
+    // Extension context invalidated (e.g. after reload); fall back to key.
+  }
+  return key;
+}
+
+function applyI18n(root) {
+  const scope = root || document;
+  for (const el of scope.querySelectorAll("[data-i18n]")) {
+    el.textContent = t(el.dataset.i18n);
+  }
+  for (const el of scope.querySelectorAll("[data-i18n-title]")) {
+    el.title = t(el.dataset.i18nTitle);
+  }
+  for (const el of scope.querySelectorAll("[data-i18n-placeholder]")) {
+    el.placeholder = t(el.dataset.i18nPlaceholder);
+  }
+  for (const el of scope.querySelectorAll("[data-i18n-aria]")) {
+    el.setAttribute("aria-label", t(el.dataset.i18nAria));
+  }
+}
+
 const SENSITIVE_HEADER_NAMES = NetworkExporterShared.SENSITIVE_HEADER_NAMES;
+const MAX_EXPORT_BODY_BYTES = NetworkExporterShared.MAX_EXPORT_BODY_BYTES;
+const isLikelyBinaryMimeType = NetworkExporterShared.isLikelyBinaryMimeType;
+const truncateBody = NetworkExporterShared.truncateBody;
+const clampStoredBody = NetworkExporterShared.clampStoredBody;
 const requestNormalizer = NetworkExporterShared.createRequestNormalizer();
 const getTypeGroup = NetworkExporterShared.getTypeGroup;
 
@@ -50,6 +82,7 @@ const els = {
   includeSensitiveHeaders: document.getElementById("includeSensitiveHeaders"),
   copyJson: document.getElementById("copyJson"),
   copyMarkdown: document.getElementById("copyMarkdown"),
+  truncateLargeBodies: document.getElementById("truncateLargeBodies"),
   statusMessage: document.getElementById("statusMessage")
 };
 
@@ -58,6 +91,12 @@ init();
 function init() {
   bindEvents();
 
+  try {
+    applyI18n();
+  } catch {
+    // Extension context invalidated — fall back to raw data-i18n values.
+  }
+
   if (globalThis.NetworkExporterPendingStore) {
     attachNetworkExporterStore(globalThis.NetworkExporterPendingStore);
     return;
@@ -65,7 +104,19 @@ function init() {
 
   render();
   updateCaptureControls();
-  setStatus(hasDevToolsApi() ? "Waiting for DevTools capture bridge." : "Open this panel inside Chrome DevTools to capture requests.");
+  if (!hasDevToolsApi()) {
+    setStatus(t("msg_open_in_devtools"));
+  } else {
+    try {
+      if (!globalThis.chrome?.devtools?.network) {
+        setStatus(t("msg_api_unavailable"));
+        return;
+      }
+    } catch {
+      // chrome access itself can throw when context is invalidated
+    }
+    setStatus(t("msg_waiting"));
+  }
 }
 
 function hasDevToolsApi() {
@@ -110,9 +161,13 @@ function applyCaptureSnapshot(snapshot) {
 
 function updateCaptureControls() {
   els.recordToggle.classList.toggle("active", state.isRecording);
-  els.recordToggle.title = state.isRecording ? "Pause request recording" : "Record requests";
+  els.recordToggle.title = state.isRecording ? t("pause_title") : t("record_title");
   els.recordToggle.setAttribute("aria-label", els.recordToggle.title);
   els.preserveLog.checked = state.preserveLog;
+}
+
+function clearSelection() {
+  state.selectedIds.clear();
 }
 
 function bindEvents() {
@@ -123,7 +178,7 @@ function bindEvents() {
     if (captureStore) {
       captureStore.setRecording(nextRecording);
     }
-    setStatus(state.isRecording ? "Recording enabled." : "Recording paused.");
+    setStatus(state.isRecording ? t("msg_recording_enabled") : t("msg_recording_paused"));
   });
 
   els.clearRequests.addEventListener("click", () => {
@@ -135,7 +190,7 @@ function bindEvents() {
       state.activeRequestId = "";
       render();
     }
-    setStatus("Captured requests cleared.");
+    setStatus(t("msg_cleared"));
   });
 
   els.preserveLog.addEventListener("change", () => {
@@ -143,7 +198,7 @@ function bindEvents() {
     if (captureStore) {
       captureStore.setPreserveLog(state.preserveLog);
     }
-    setStatus(state.preserveLog ? "Preserve log enabled." : "Preserve log disabled. New navigations clear captured requests.");
+    setStatus(state.preserveLog ? t("msg_preserve_on") : t("msg_preserve_off"));
   });
 
   els.toggleExportPane.addEventListener("click", () => {
@@ -158,21 +213,25 @@ function bindEvents() {
 
   els.filterInput.addEventListener("input", () => {
     state.filterText = els.filterInput.value.trim().toLowerCase();
+    clearSelection();
     render();
   });
 
   els.invertFilter.addEventListener("change", () => {
     state.invertFilter = els.invertFilter.checked;
+    clearSelection();
     render();
   });
 
   els.excludeExtensionRequests.addEventListener("change", () => {
     state.excludeExtensionRequests = els.excludeExtensionRequests.checked;
+    clearSelection();
     render();
   });
 
   els.statusFilter.addEventListener("change", () => {
     state.statusFilter = els.statusFilter.value;
+    clearSelection();
     render();
   });
 
@@ -186,6 +245,7 @@ function bindEvents() {
     for (const item of els.typeChips.querySelectorAll("[data-type]")) {
       item.classList.toggle("active", item === chip);
     }
+    clearSelection();
     render();
   });
 
@@ -246,14 +306,14 @@ function bindEvents() {
     for (const input of getFieldInputs()) {
       input.checked = defaultFields.has(input.dataset.field);
     }
-    setStatus("Default export fields selected.");
+    setStatus(t("msg_defaults_selected"));
   });
 
   els.selectFullFields.addEventListener("click", () => {
     for (const input of getFieldInputs()) {
       input.checked = true;
     }
-    setStatus("Full export fields selected.");
+    setStatus(t("msg_full_selected"));
   });
 
   els.copyJson.addEventListener("click", () => {
@@ -400,8 +460,8 @@ function render() {
     els.requestRows.appendChild(renderRow(request));
   }
 
-  els.requestCount.textContent = `${visible.length} of ${state.requests.length} requests`;
-  els.selectedCount.textContent = `${state.selectedIds.size} selected`;
+  els.requestCount.textContent = t("request_count", visible.length, state.requests.length);
+  els.selectedCount.textContent = t("selected_count", state.selectedIds.size);
   els.selectAll.checked = visible.length > 0 && selectedVisible.length === visible.length;
   els.selectAll.indeterminate = selectedVisible.length > 0 && selectedVisible.length < visible.length;
   renderStatusSummary(visible);
@@ -416,10 +476,10 @@ function renderStatusSummary(requests) {
 
   const summary = computeStatusSummary(requests);
   els.statusSummary.innerHTML = "";
-  els.statusSummary.appendChild(createStatusChip("Errors", summary.errors, "strong", "4xx, 5xx, and failed requests"));
-  els.statusSummary.appendChild(createStatusChip("4xx", summary.clientErrors, "client", "Client error responses"));
-  els.statusSummary.appendChild(createStatusChip("5xx", summary.serverErrors, "server", "Server error responses"));
-  els.statusSummary.appendChild(createStatusChip("Failed", summary.failed, "failed", "Requests without a normal HTTP response"));
+  els.statusSummary.appendChild(createStatusChip(t("chip_errors"), summary.errors, "strong", t("chip_errors")));
+  els.statusSummary.appendChild(createStatusChip("4xx", summary.clientErrors, "client", "4xx"));
+  els.statusSummary.appendChild(createStatusChip("5xx", summary.serverErrors, "server", "5xx"));
+  els.statusSummary.appendChild(createStatusChip(t("chip_failed"), summary.failed, "failed", t("chip_failed")));
 }
 
 function createStatusChip(label, count, variant, title) {
@@ -463,7 +523,7 @@ function computeStatusSummary(requests) {
 function renderExportPane() {
   els.content.classList.toggle("export-collapsed", state.isExportCollapsed);
   els.exportPane.classList.toggle("collapsed", state.isExportCollapsed);
-  els.toggleExportPane.title = state.isExportCollapsed ? "Expand export panel" : "Collapse export panel";
+  els.toggleExportPane.title = state.isExportCollapsed ? t("export_expand") : t("export_collapse");
   els.toggleExportPane.setAttribute("aria-label", els.toggleExportPane.title);
 }
 
@@ -483,7 +543,7 @@ function renderRow(request) {
   checkbox.type = "checkbox";
   checkbox.dataset.id = request.id;
   checkbox.checked = state.selectedIds.has(request.id);
-  checkbox.setAttribute("aria-label", `Select ${request.name}`);
+  checkbox.setAttribute("aria-label", `${t("th_name")}: ${request.name}`);
   checkboxCell.appendChild(checkbox);
   tr.appendChild(checkboxCell);
 
@@ -520,9 +580,9 @@ function renderDetail() {
   }
 
   if (!request) {
-    els.detailName.textContent = "No request selected";
+    els.detailName.textContent = t("detail_none");
     els.detailUrl.textContent = "";
-    els.detailContent.textContent = "Click a request row to inspect it.";
+    els.detailContent.textContent = t("detail_hint");
     return;
   }
 
@@ -548,24 +608,24 @@ function getDetailText(request, tab) {
 
 function formatHeadersDetail(request) {
   return [
-    "General",
-    `URL: ${request.url || "-"}`,
-    `Method: ${request.method || "-"}`,
-    `Status: ${request.statusCode || request.statusText || "-"}`,
-    `Type: ${request.type || "-"}`,
-    `MIME type: ${request.mimeType || "-"}`,
+    t("detail_general"),
+    `${t("detail_url_label")}: ${request.url || "-"}`,
+    `${t("detail_method_label")}: ${request.method || "-"}`,
+    `${t("detail_status_label")}: ${request.statusCode || request.statusText || "-"}`,
+    `${t("detail_type_label")}: ${request.type || "-"}`,
+    `${t("detail_mime_label")}: ${request.mimeType || "-"}`,
     "",
-    "Request Headers",
+    t("detail_request_headers"),
     formatHeaderLines(request.requestHeaders),
     "",
-    "Response Headers",
+    t("detail_response_headers"),
     formatHeaderLines(request.responseHeaders)
   ].join("\n");
 }
 
 function formatPayloadDetail(request) {
   if (!request.requestBody) {
-    return "No request payload.";
+    return t("detail_no_payload");
   }
   return formatMaybeJson(request.requestBody);
 }
@@ -573,7 +633,7 @@ function formatPayloadDetail(request) {
 function formatResponseDetail(request) {
   const responseBody = maybeDecodeResponseBody(request);
   if (!responseBody) {
-    return "No response body captured.";
+    return t("detail_no_response");
   }
   return formatMaybeJson(responseBody);
 }
@@ -639,18 +699,25 @@ function getSelectedRequests() {
 async function copyExport(format) {
   const selected = getSelectedRequests();
   if (!selected.length) {
-    setStatus("Select at least one request before exporting.");
+    setStatus(t("msg_select_request"));
     return;
   }
 
   const fields = getSelectedFields();
   if (!fields.length) {
-    setStatus("Select at least one export field.");
+    setStatus(t("msg_select_field"));
     return;
   }
 
-  const rows = selected.map((request) => buildExportObject(request, fields));
-  const text = format === "markdown" ? toMarkdown(rows, fields) : JSON.stringify(rows, null, 2);
+  let rows;
+  let text;
+  try {
+    rows = selected.map((request) => buildExportObject(request, fields));
+    text = format === "markdown" ? toMarkdown(rows, fields) : JSON.stringify(rows, null, 2);
+  } catch (error) {
+    setStatus(t("msg_build_failed", error.message));
+    return;
+  }
 
   const byteLength = NetworkExporterShared.getByteLength(text);
   const tokenCount = NetworkExporterShared.estimateTokens(text);
@@ -659,7 +726,7 @@ async function copyExport(format) {
     await navigator.clipboard.writeText(text);
     renderCopyResult(selected.length, format, byteLength, tokenCount);
   } catch (error) {
-    setStatus(`Copy failed: ${error.message}`);
+    setStatus(t("msg_copy_failed", error.message));
   }
 }
 
@@ -667,9 +734,11 @@ function renderCopyResult(selectedCount, format, byteLength, tokenCount) {
   const host = els.statusMessage;
   host.textContent = "";
 
-  host.appendChild(document.createTextNode("Copied "));
-  host.appendChild(createMetricChip(`${selectedCount} request${selectedCount === 1 ? "" : "s"}`));
-  host.appendChild(document.createTextNode(` as ${format} · `));
+  const requestWord = selectedCount === 1 ? t("msg_request_one") : t("msg_request_many");
+
+  host.appendChild(document.createTextNode(`${t("msg_copied")} `));
+  host.appendChild(createMetricChip(`${selectedCount} ${requestWord}`));
+  host.appendChild(document.createTextNode(` ${t("msg_as")} ${format} · `));
   host.appendChild(createMetricChip(formatBytes(byteLength)));
   host.appendChild(document.createTextNode(" · "));
   host.appendChild(createMetricChip(`~${tokenCount.toLocaleString()} tokens`, getTokenTier(tokenCount)));
@@ -692,17 +761,22 @@ function getTokenTier(tokenCount) {
 function buildExportObject(request, fields, options = {}) {
   const output = {};
   const includeSensitive = options.includeSensitive ?? els.includeSensitiveHeaders.checked;
+  const truncateBodies = options.truncateBodies ?? (els.truncateLargeBodies ? els.truncateLargeBodies.checked : true);
+
+  function maybeTruncate(value) {
+    return truncateBodies ? truncateBody(value, MAX_EXPORT_BODY_BYTES) : value;
+  }
 
   for (const field of fields) {
     switch (field) {
       case "curlRequest":
-        output.curlRequest = buildCurl(request, includeSensitive);
+        output.curlRequest = buildCurl(request, includeSensitive, truncateBodies);
         break;
       case "statusCode":
         output.statusCode = request.statusCode;
         break;
       case "responseBody":
-        output.responseBody = maybeDecodeResponseBody(request);
+        output.responseBody = maybeTruncate(maybeDecodeResponseBody(request));
         break;
       case "requestHeaders":
         output.requestHeaders = headersToObject(filterHeaders(request.requestHeaders, includeSensitive));
@@ -711,7 +785,7 @@ function buildExportObject(request, fields, options = {}) {
         output.responseHeaders = headersToObject(filterHeaders(request.responseHeaders, includeSensitive));
         break;
       case "requestBody":
-        output.requestBody = request.requestBody || "";
+        output.requestBody = maybeTruncate(request.requestBody || "");
         break;
       case "size":
         output.size = formatBytes(request.sizeBytes);
@@ -729,7 +803,7 @@ function buildExportObject(request, fields, options = {}) {
   return output;
 }
 
-function buildCurl(request, includeSensitive) {
+function buildCurl(request, includeSensitive, truncateBodies) {
   const parts = ["curl"];
   parts.push(shellQuote(request.url));
 
@@ -745,7 +819,8 @@ function buildCurl(request, includeSensitive) {
   }
 
   if (request.requestBody) {
-    parts.push("--data-raw", shellQuote(request.requestBody));
+    const body = truncateBodies ? truncateBody(request.requestBody, MAX_EXPORT_BODY_BYTES) : request.requestBody;
+    parts.push("--data-raw", shellQuote(body));
   }
 
   return parts.join(" ");
@@ -782,15 +857,22 @@ function maybeDecodeResponseBody(request) {
   if (!request.responseBody) {
     return "";
   }
+
+  if (isLikelyBinaryMimeType(request.mimeType)) {
+    const bytes = NetworkExporterShared.getByteLength(request.responseBody);
+    return `[binary response: ${request.mimeType || "unknown"}, ${bytes.toLocaleString()} bytes]`;
+  }
+
   if (request.responseEncoding !== "base64") {
     return request.responseBody;
   }
+
   try {
     const binary = atob(request.responseBody);
     const bytes = Uint8Array.from(binary, (char) => char.charCodeAt(0));
     return new TextDecoder().decode(bytes);
   } catch {
-    return request.responseBody;
+    return "[response body could not be decoded]";
   }
 }
 
@@ -862,6 +944,7 @@ globalThis.attachNetworkExporterStore = attachNetworkExporterStore;
 
 globalThis.NetworkExporterInternals = {
   state,
+  clearSelection,
   attachNetworkExporterStore,
   applyCaptureSnapshot,
   normalizeRequest,
@@ -895,6 +978,9 @@ globalThis.NetworkExporterInternals = {
   filterHeaders,
   headersToObject,
   maybeDecodeResponseBody,
+  truncateBody,
+  clampStoredBody,
+  isLikelyBinaryMimeType,
   toMarkdown,
   getCodeFence,
   formatBytes,

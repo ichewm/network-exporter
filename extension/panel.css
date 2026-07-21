@@ -513,14 +513,16 @@ td:nth-child(7) {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   gap: 12px;
   padding: 8px 10px;
   border-bottom: 1px solid var(--line);
+  min-width: 0;
+  overflow: hidden;
 }
 
 .detail-title {
-  flex: 1 1 360px;
+  flex: 1 1 auto;
   min-width: 0;
   display: grid;
   gap: 2px;
@@ -540,12 +542,12 @@ td:nth-child(7) {
 
 .detail-tabs {
   display: grid;
-  flex: 1 1 360px;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  flex: 0 1 auto;
+  grid-template-columns: repeat(4, minmax(56px, 1fr));
   gap: 6px;
   min-width: 0;
-  max-width: 100%;
-  overflow: visible;
+  max-width: 360px;
+  overflow: hidden;
 }
 
 .detail-tab {
@@ -794,13 +796,13 @@ td:nth-child(7) {
     gap: 8px;
   }
 
-  .detail-header {
-    align-items: flex-start;
-    flex-direction: column;
+  .detail-title {
+    display: none;
   }
 
   .detail-tabs {
-    width: 100%;
+    flex: 1 1 100%;
+    max-width: 100%;
   }
 
   .preset-actions {

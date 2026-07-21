@@ -1,5 +1,7 @@
 "use strict";
 
+const clampStoredBody = NetworkExporterShared.clampStoredBody;
+
 const captureStore = createNetworkExporterCaptureStore();
 globalThis.NetworkExporterCaptureStore = captureStore;
 
@@ -37,7 +39,12 @@ function createNetworkExporterCaptureStore() {
       return;
     }
 
-    const normalized = normalizer.normalizeRequest(request);
+    let normalized;
+    try {
+      normalized = normalizer.normalizeRequest(request);
+    } catch (error) {
+      normalized = makeErrorRequest(request, error);
+    }
     upsertRequest(normalized);
     notify();
 
@@ -45,16 +52,24 @@ function createNetworkExporterCaptureStore() {
       return;
     }
 
-    request.getContent((content, encoding) => {
-      const target = state.requests.find((item) => item.id === normalized.id);
-      if (!target) {
-        return;
-      }
+    try {
+      request.getContent((content, encoding) => {
+        try {
+          const target = state.requests.find((item) => item.id === normalized.id);
+          if (!target) {
+            return;
+          }
 
-      target.responseBody = content || "";
-      target.responseEncoding = encoding || "";
-      notify();
-    });
+          target.responseBody = clampStoredBody(content || "");
+          target.responseEncoding = encoding || "";
+          notify();
+        } catch (error) {
+          console.error("[network-exporter] getContent callback failed:", error);
+        }
+      });
+    } catch (error) {
+      console.error("[network-exporter] getContent invocation failed:", error);
+    }
   });
 
   chrome.devtools.network.onNavigated.addListener(() => {
@@ -77,7 +92,13 @@ function createNetworkExporterCaptureStore() {
     chrome.devtools.network.getHAR((harLog) => {
       const entries = harLog?.entries || [];
       for (const entry of entries) {
-        upsertRequest(normalizer.normalizeRequest(entry));
+        let normalized;
+        try {
+          normalized = normalizer.normalizeRequest(entry);
+        } catch (error) {
+          normalized = makeErrorRequest(entry, error);
+        }
+        upsertRequest(normalized);
       }
       notify();
     });
@@ -142,6 +163,39 @@ function createNetworkExporterCaptureStore() {
       ...request,
       requestHeaders: request.requestHeaders.map((header) => ({ ...header })),
       responseHeaders: request.responseHeaders.map((header) => ({ ...header }))
+    };
+  }
+
+  function makeErrorRequest(entry, error) {
+    let rawUrl = "";
+    let rawMethod = "";
+    try {
+      rawUrl = entry?.request?.url || "";
+      rawMethod = entry?.request?.method || "";
+    } catch {
+      rawUrl = "";
+      rawMethod = "";
+    }
+    const sequence = `error:${Date.now()}:${Math.random().toString(36).slice(2, 8)}`;
+    return {
+      id: sequence,
+      name: NetworkExporterShared.getName(rawUrl) || "(capture failed)",
+      url: rawUrl,
+      method: rawMethod,
+      statusCode: null,
+      statusText: "",
+      type: "other",
+      typeGroup: "other",
+      mimeType: "",
+      sizeBytes: null,
+      timeMs: null,
+      initiator: "",
+      startedDateTime: "",
+      requestHeaders: [],
+      responseHeaders: [],
+      requestBody: "",
+      responseBody: `[network exporter] failed to capture this request: ${error?.message || error}`,
+      responseEncoding: ""
     };
   }
 }

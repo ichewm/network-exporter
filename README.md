@@ -44,7 +44,7 @@ chrome-web-store/
 The upload ZIP is:
 
 ```text
-chrome-web-store/network-exporter-0.3.0.zip
+chrome-web-store/network-exporter-0.4.1.zip
 ```
 
 ## Privacy

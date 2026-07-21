@@ -161,6 +161,16 @@ const context = {
 };
 
 context.globalThis = context;
+context.chrome = {
+  i18n: {
+    getMessage(key, args) {
+      if (args && args.length) {
+        return key + ":" + String(args[0]);
+      }
+      return key;
+    }
+  }
+};
 vm.createContext(context);
 vm.runInContext(sharedSource, context, { filename: "shared.js" });
 vm.runInContext(panelSource, context, { filename: "panel.js" });
@@ -310,7 +320,7 @@ assert.strictEqual(summary.failed, 1);
 assert.strictEqual(summary.errors, 3);
 logic.renderStatusSummary([request, clientErrorRequest, serverErrorRequest, failedRequest]);
 assert.strictEqual(elements.get("statusSummary").children.length, 4);
-assert.strictEqual(elements.get("statusSummary").children[0].children[1].textContent, "Errors: 3");
+assert.strictEqual(elements.get("statusSummary").children[0].children[1].textContent, "chip_errors: 3");
 
 logic.state.requests = [request, clientErrorRequest, serverErrorRequest, failedRequest];
 logic.state.statusFilter = "errors";
@@ -394,7 +404,7 @@ assert.ok(!safeExport.curlRequest.includes("Cookie"));
 assert.deepStrictEqual(Object.keys(safeExport.requestHeaders), ["Content-Type"]);
 assert.deepStrictEqual(Object.keys(safeExport.responseHeaders), ["Content-Type"]);
 
-assert.ok(logic.getDetailText(request, "headers").includes("Request Headers"));
+assert.ok(logic.getDetailText(request, "headers").includes("detail_request_headers"));
 assert.ok(logic.getDetailText(request, "headers").includes("Content-Type: application/json"));
 assert.ok(logic.getDetailText(request, "payload").includes("\"grant\": \"demo\""));
 assert.ok(logic.getDetailText(request, "response").includes("\"ok\": true"));
@@ -471,6 +481,8 @@ const navigatedListeners = [];
 let panelShownListener = null;
 const devtoolsContext = {
   console,
+  TextDecoder,
+  TextEncoder,
   URL,
   chrome: {
     devtools: {

@@ -8,65 +8,65 @@
   </head>
   <body>
     <main class="app">
-      <section class="toolbar" aria-label="Network controls">
-        <button id="recordToggle" class="icon-button active" type="button" title="Record requests" aria-label="Record requests">
+      <section class="toolbar" data-i18n-aria="toolbar_aria">
+        <button id="recordToggle" class="icon-button active" type="button" data-i18n-title="record_title" data-i18n-aria="record_title">
           <span class="record-dot"></span>
         </button>
-        <button id="clearRequests" class="icon-button" type="button" title="Clear captured requests" aria-label="Clear captured requests">
+        <button id="clearRequests" class="icon-button" type="button" data-i18n-title="clear_title" data-i18n-aria="clear_title">
           <span class="clear-icon"></span>
         </button>
-        <button id="filterToggle" class="icon-button active" type="button" title="Show filters" aria-label="Show filters">
+        <button id="filterToggle" class="icon-button active" type="button" data-i18n-title="filter_title" data-i18n-aria="filter_title">
           <span class="filter-icon"></span>
         </button>
         <label class="search-box">
           <span class="search-icon"></span>
-          <input id="filterInput" type="search" placeholder="Filter by URL, name, method, status, domain, or type">
+          <input id="filterInput" type="search" data-i18n-placeholder="filter_placeholder">
         </label>
         <label class="check-control">
           <input id="preserveLog" type="checkbox">
-          <span>Preserve log</span>
+          <span data-i18n="preserve_log">Preserve log</span>
         </label>
         <label class="check-control">
           <input id="invertFilter" type="checkbox">
-          <span>Invert</span>
+          <span data-i18n="invert">Invert</span>
         </label>
         <label class="check-control">
           <input id="excludeExtensionRequests" type="checkbox" checked>
-          <span>Exclude extensions</span>
+          <span data-i18n="exclude_extensions">Exclude extensions</span>
         </label>
-        <select id="statusFilter" class="select-control" aria-label="Status filter">
-          <option value="">Any status</option>
+        <select id="statusFilter" class="select-control" data-i18n-aria="status_filter_aria">
+          <option value="" data-i18n="status_any">Any status</option>
           <option value="2">2xx</option>
           <option value="3">3xx</option>
           <option value="4">4xx</option>
           <option value="5">5xx</option>
-          <option value="failed">Failed</option>
-          <option value="errors">Errors</option>
+          <option value="failed" data-i18n="status_failed">Failed</option>
+          <option value="errors" data-i18n="status_errors">Errors</option>
         </select>
       </section>
 
-      <section id="filterPanel" class="filters" aria-label="Resource type filters">
-        <div id="typeChips" class="chips" role="listbox" aria-label="Resource type">
-          <button class="chip active" type="button" data-type="all">All</button>
-          <button class="chip" type="button" data-type="fetch-xhr">Fetch/XHR</button>
-          <button class="chip" type="button" data-type="doc">Doc</button>
-          <button class="chip" type="button" data-type="css">CSS</button>
-          <button class="chip" type="button" data-type="js">JS</button>
-          <button class="chip" type="button" data-type="font">Font</button>
-          <button class="chip" type="button" data-type="img">Img</button>
-          <button class="chip" type="button" data-type="media">Media</button>
-          <button class="chip" type="button" data-type="manifest">Manifest</button>
-          <button class="chip" type="button" data-type="socket">Socket</button>
-          <button class="chip" type="button" data-type="wasm">Wasm</button>
-          <button class="chip" type="button" data-type="other">Other</button>
+      <section id="filterPanel" class="filters" data-i18n-aria="filters_aria">
+        <div id="typeChips" class="chips" role="listbox" data-i18n-aria="type_aria">
+          <button class="chip active" type="button" data-type="all" data-i18n="type_all">All</button>
+          <button class="chip" type="button" data-type="fetch-xhr" data-i18n="type_fetch_xhr">Fetch/XHR</button>
+          <button class="chip" type="button" data-type="doc" data-i18n="type_doc">Doc</button>
+          <button class="chip" type="button" data-type="css" data-i18n="type_css">CSS</button>
+          <button class="chip" type="button" data-type="js" data-i18n="type_js">JS</button>
+          <button class="chip" type="button" data-type="font" data-i18n="type_font">Font</button>
+          <button class="chip" type="button" data-type="img" data-i18n="type_img">Img</button>
+          <button class="chip" type="button" data-type="media" data-i18n="type_media">Media</button>
+          <button class="chip" type="button" data-type="manifest" data-i18n="type_manifest">Manifest</button>
+          <button class="chip" type="button" data-type="socket" data-i18n="type_socket">Socket</button>
+          <button class="chip" type="button" data-type="wasm" data-i18n="type_wasm">Wasm</button>
+          <button class="chip" type="button" data-type="other" data-i18n="type_other">Other</button>
         </div>
       </section>
 
       <section id="content" class="content">
-        <section class="request-pane" aria-label="Captured requests">
+        <section class="request-pane" data-i18n-aria="request_pane_aria">
           <div class="table-meta">
             <span id="requestCount">0 requests</span>
-            <span id="statusSummary" class="status-summary" aria-label="Status summary"></span>
+            <span id="statusSummary" class="status-summary" data-i18n-aria="status_summary_aria"></span>
             <span id="selectedCount">0 selected</span>
           </div>
           <div class="table-wrap">
@@ -85,47 +85,47 @@
               <thead>
                 <tr>
                   <th class="select-col">
-                    <input id="selectAll" type="checkbox" aria-label="Select all visible requests">
+                    <input id="selectAll" type="checkbox" data-i18n-aria="select_all_aria">
                   </th>
-                  <th>Name</th>
-                  <th>Method</th>
-                  <th>Status</th>
-                  <th>Type</th>
-                  <th>Size</th>
-                  <th>Time</th>
-                  <th>Initiator</th>
-                  <th>URL</th>
+                  <th data-i18n="th_name">Name</th>
+                  <th data-i18n="th_method">Method</th>
+                  <th data-i18n="th_status">Status</th>
+                  <th data-i18n="th_type">Type</th>
+                  <th data-i18n="th_size">Size</th>
+                  <th data-i18n="th_time">Time</th>
+                  <th data-i18n="th_initiator">Initiator</th>
+                  <th data-i18n="th_url">URL</th>
                 </tr>
               </thead>
               <tbody id="requestRows"></tbody>
             </table>
           </div>
-          <section class="detail-pane" aria-label="Request details">
+          <section class="detail-pane" data-i18n-aria="detail_pane_aria">
             <div class="detail-header">
               <div class="detail-title">
                 <strong id="detailName">No request selected</strong>
                 <span id="detailUrl"></span>
               </div>
-              <div id="detailTabs" class="detail-tabs" role="tablist" aria-label="Request detail tabs">
-                <button class="detail-tab active" type="button" data-detail-tab="headers">Headers</button>
-                <button class="detail-tab" type="button" data-detail-tab="payload">Payload</button>
-                <button class="detail-tab" type="button" data-detail-tab="response">Response</button>
-                <button class="detail-tab" type="button" data-detail-tab="meta">Meta</button>
+              <div id="detailTabs" class="detail-tabs" role="tablist" data-i18n-aria="detail_tabs_aria">
+                <button class="detail-tab active" type="button" data-detail-tab="headers" data-i18n="tab_headers">Headers</button>
+                <button class="detail-tab" type="button" data-detail-tab="payload" data-i18n="tab_payload">Payload</button>
+                <button class="detail-tab" type="button" data-detail-tab="response" data-i18n="tab_response">Response</button>
+                <button class="detail-tab" type="button" data-detail-tab="meta" data-i18n="tab_meta">Meta</button>
               </div>
             </div>
             <pre id="detailContent" class="detail-content">Click a request row to inspect it.</pre>
           </section>
         </section>
 
-        <aside id="exportPane" class="export-pane" aria-label="Export options">
+        <aside id="exportPane" class="export-pane" data-i18n-aria="export_aria">
           <div class="export-header">
-            <h1>Export</h1>
+            <h1 data-i18n="export_title">Export</h1>
             <div class="export-header-actions">
               <div class="preset-actions">
-                <button id="selectDefaults" type="button">Defaults</button>
-                <button id="selectFullFields" type="button">Full</button>
+                <button id="selectDefaults" type="button" data-i18n="preset_defaults">Defaults</button>
+                <button id="selectFullFields" type="button" data-i18n="preset_full">Full</button>
               </div>
-              <button id="toggleExportPane" class="icon-button export-toggle" type="button" title="Collapse export panel" aria-label="Collapse export panel">
+              <button id="toggleExportPane" class="icon-button export-toggle" type="button" data-i18n-title="export_collapse" data-i18n-aria="export_collapse">
                 <span class="collapse-icon"></span>
               </button>
             </div>
@@ -133,7 +133,7 @@
 
           <div id="exportBody" class="export-body">
             <fieldset class="field-list">
-              <legend>Fields</legend>
+              <legend data-i18n="fields_legend">Fields</legend>
               <label><input type="checkbox" data-field="curlRequest" checked> curlRequest</label>
               <label><input type="checkbox" data-field="statusCode" checked> statusCode</label>
               <label><input type="checkbox" data-field="responseBody" checked> responseBody</label>
@@ -152,12 +152,17 @@
 
             <label class="check-control sensitive">
               <input id="includeSensitiveHeaders" type="checkbox">
-              <span>Include sensitive headers</span>
+              <span data-i18n="include_sensitive">Include sensitive headers</span>
+            </label>
+
+            <label class="check-control">
+              <input id="truncateLargeBodies" type="checkbox" checked>
+              <span data-i18n="truncate_bodies">Truncate large bodies (256&nbsp;kB)</span>
             </label>
 
             <div class="export-actions">
-              <button id="copyJson" type="button">Copy selected as JSON</button>
-              <button id="copyMarkdown" type="button">Copy selected as Markdown</button>
+              <button id="copyJson" type="button" data-i18n="copy_json">Copy selected as JSON</button>
+              <button id="copyMarkdown" type="button" data-i18n="copy_markdown">Copy selected as Markdown</button>
             </div>
             <p id="statusMessage" class="status-message" role="status"></p>
           </div>

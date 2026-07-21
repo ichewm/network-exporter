@@ -18,6 +18,7 @@ Full HAR exports contain too much data and often include sensitive headers. Gene
 - Support clicking a single request row to inspect request details.
 - Support selecting multiple requests with checkboxes.
 - Support selecting all currently visible requests.
+- Clear the current selection whenever any filter changes (type chip, status, search, invert, or extension exclusion).
 - Support pausing and resuming local capture.
 - Support clearing captured requests.
 - Support filtering requests before selection.
