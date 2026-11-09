@@ -132,77 +132,91 @@
           </div>
 
           <div id="exportBody" class="export-body">
-            <fieldset id="fieldList" class="field-list">
+                        <fieldset id="fieldList" class="field-list">
               <legend data-i18n="fields_legend">Fields</legend>
-              <div class="field-chip" draggable="true" data-field-name="curlRequest">
-                <button type="button" class="field-move" data-move="up" data-field-name="curlRequest" data-i18n-title="field_move_up" data-i18n-aria="field_move_up">←</button>
-                <label data-i18n-title="field_drag_hint"><input type="checkbox" data-field="curlRequest" checked> curlRequest</label>
-                <button type="button" class="field-move" data-move="down" data-field-name="curlRequest" data-i18n-title="field_move_down" data-i18n-aria="field_move_down">→</button>
+              <div class="field-chip" data-field-name="curlRequest">
+                <button type="button" class="field-move" data-move="up" data-field-name="curlRequest" data-i18n-title="field_move_up" data-i18n-aria="field_move_up">&#8592;</button>
+                <span class="field-order-badge" aria-hidden="true"></span>
+                <label><input type="checkbox" data-field="curlRequest" checked> curlRequest</label>
+                <button type="button" class="field-move" data-move="down" data-field-name="curlRequest" data-i18n-title="field_move_down" data-i18n-aria="field_move_down">&#8594;</button>
               </div>
-              <div class="field-chip" draggable="true" data-field-name="statusCode">
-                <button type="button" class="field-move" data-move="up" data-field-name="statusCode" data-i18n-title="field_move_up" data-i18n-aria="field_move_up">←</button>
-                <label data-i18n-title="field_drag_hint"><input type="checkbox" data-field="statusCode" checked> statusCode</label>
-                <button type="button" class="field-move" data-move="down" data-field-name="statusCode" data-i18n-title="field_move_down" data-i18n-aria="field_move_down">→</button>
+              <div class="field-chip" data-field-name="statusCode">
+                <button type="button" class="field-move" data-move="up" data-field-name="statusCode" data-i18n-title="field_move_up" data-i18n-aria="field_move_up">&#8592;</button>
+                <span class="field-order-badge" aria-hidden="true"></span>
+                <label><input type="checkbox" data-field="statusCode" checked> statusCode</label>
+                <button type="button" class="field-move" data-move="down" data-field-name="statusCode" data-i18n-title="field_move_down" data-i18n-aria="field_move_down">&#8594;</button>
               </div>
-              <div class="field-chip" draggable="true" data-field-name="responseBody">
-                <button type="button" class="field-move" data-move="up" data-field-name="responseBody" data-i18n-title="field_move_up" data-i18n-aria="field_move_up">←</button>
-                <label data-i18n-title="field_drag_hint"><input type="checkbox" data-field="responseBody" checked> responseBody</label>
-                <button type="button" class="field-move" data-move="down" data-field-name="responseBody" data-i18n-title="field_move_down" data-i18n-aria="field_move_down">→</button>
+              <div class="field-chip" data-field-name="responseBody">
+                <button type="button" class="field-move" data-move="up" data-field-name="responseBody" data-i18n-title="field_move_up" data-i18n-aria="field_move_up">&#8592;</button>
+                <span class="field-order-badge" aria-hidden="true"></span>
+                <label><input type="checkbox" data-field="responseBody" checked> responseBody</label>
+                <button type="button" class="field-move" data-move="down" data-field-name="responseBody" data-i18n-title="field_move_down" data-i18n-aria="field_move_down">&#8594;</button>
               </div>
-              <div class="field-chip" draggable="true" data-field-name="method">
-                <button type="button" class="field-move" data-move="up" data-field-name="method" data-i18n-title="field_move_up" data-i18n-aria="field_move_up">←</button>
-                <label data-i18n-title="field_drag_hint"><input type="checkbox" data-field="method" checked> method</label>
-                <button type="button" class="field-move" data-move="down" data-field-name="method" data-i18n-title="field_move_down" data-i18n-aria="field_move_down">→</button>
+              <div class="field-chip" data-field-name="method">
+                <button type="button" class="field-move" data-move="up" data-field-name="method" data-i18n-title="field_move_up" data-i18n-aria="field_move_up">&#8592;</button>
+                <span class="field-order-badge" aria-hidden="true"></span>
+                <label><input type="checkbox" data-field="method" checked> method</label>
+                <button type="button" class="field-move" data-move="down" data-field-name="method" data-i18n-title="field_move_down" data-i18n-aria="field_move_down">&#8594;</button>
               </div>
-              <div class="field-chip" draggable="true" data-field-name="url">
-                <button type="button" class="field-move" data-move="up" data-field-name="url" data-i18n-title="field_move_up" data-i18n-aria="field_move_up">←</button>
-                <label data-i18n-title="field_drag_hint"><input type="checkbox" data-field="url"> url</label>
-                <button type="button" class="field-move" data-move="down" data-field-name="url" data-i18n-title="field_move_down" data-i18n-aria="field_move_down">→</button>
+              <div class="field-chip" data-field-name="url">
+                <button type="button" class="field-move" data-move="up" data-field-name="url" data-i18n-title="field_move_up" data-i18n-aria="field_move_up">&#8592;</button>
+                <span class="field-order-badge" aria-hidden="true"></span>
+                <label><input type="checkbox" data-field="url"> url</label>
+                <button type="button" class="field-move" data-move="down" data-field-name="url" data-i18n-title="field_move_down" data-i18n-aria="field_move_down">&#8594;</button>
               </div>
-              <div class="field-chip" draggable="true" data-field-name="name">
-                <button type="button" class="field-move" data-move="up" data-field-name="name" data-i18n-title="field_move_up" data-i18n-aria="field_move_up">←</button>
-                <label data-i18n-title="field_drag_hint"><input type="checkbox" data-field="name"> name</label>
-                <button type="button" class="field-move" data-move="down" data-field-name="name" data-i18n-title="field_move_down" data-i18n-aria="field_move_down">→</button>
+              <div class="field-chip" data-field-name="name">
+                <button type="button" class="field-move" data-move="up" data-field-name="name" data-i18n-title="field_move_up" data-i18n-aria="field_move_up">&#8592;</button>
+                <span class="field-order-badge" aria-hidden="true"></span>
+                <label><input type="checkbox" data-field="name"> name</label>
+                <button type="button" class="field-move" data-move="down" data-field-name="name" data-i18n-title="field_move_down" data-i18n-aria="field_move_down">&#8594;</button>
               </div>
-              <div class="field-chip" draggable="true" data-field-name="type">
-                <button type="button" class="field-move" data-move="up" data-field-name="type" data-i18n-title="field_move_up" data-i18n-aria="field_move_up">←</button>
-                <label data-i18n-title="field_drag_hint"><input type="checkbox" data-field="type"> type</label>
-                <button type="button" class="field-move" data-move="down" data-field-name="type" data-i18n-title="field_move_down" data-i18n-aria="field_move_down">→</button>
+              <div class="field-chip" data-field-name="type">
+                <button type="button" class="field-move" data-move="up" data-field-name="type" data-i18n-title="field_move_up" data-i18n-aria="field_move_up">&#8592;</button>
+                <span class="field-order-badge" aria-hidden="true"></span>
+                <label><input type="checkbox" data-field="type"> type</label>
+                <button type="button" class="field-move" data-move="down" data-field-name="type" data-i18n-title="field_move_down" data-i18n-aria="field_move_down">&#8594;</button>
               </div>
-              <div class="field-chip" draggable="true" data-field-name="size">
-                <button type="button" class="field-move" data-move="up" data-field-name="size" data-i18n-title="field_move_up" data-i18n-aria="field_move_up">←</button>
-                <label data-i18n-title="field_drag_hint"><input type="checkbox" data-field="size"> size</label>
-                <button type="button" class="field-move" data-move="down" data-field-name="size" data-i18n-title="field_move_down" data-i18n-aria="field_move_down">→</button>
+              <div class="field-chip" data-field-name="size">
+                <button type="button" class="field-move" data-move="up" data-field-name="size" data-i18n-title="field_move_up" data-i18n-aria="field_move_up">&#8592;</button>
+                <span class="field-order-badge" aria-hidden="true"></span>
+                <label><input type="checkbox" data-field="size"> size</label>
+                <button type="button" class="field-move" data-move="down" data-field-name="size" data-i18n-title="field_move_down" data-i18n-aria="field_move_down">&#8594;</button>
               </div>
-              <div class="field-chip" draggable="true" data-field-name="time">
-                <button type="button" class="field-move" data-move="up" data-field-name="time" data-i18n-title="field_move_up" data-i18n-aria="field_move_up">←</button>
-                <label data-i18n-title="field_drag_hint"><input type="checkbox" data-field="time"> time</label>
-                <button type="button" class="field-move" data-move="down" data-field-name="time" data-i18n-title="field_move_down" data-i18n-aria="field_move_down">→</button>
+              <div class="field-chip" data-field-name="time">
+                <button type="button" class="field-move" data-move="up" data-field-name="time" data-i18n-title="field_move_up" data-i18n-aria="field_move_up">&#8592;</button>
+                <span class="field-order-badge" aria-hidden="true"></span>
+                <label><input type="checkbox" data-field="time"> time</label>
+                <button type="button" class="field-move" data-move="down" data-field-name="time" data-i18n-title="field_move_down" data-i18n-aria="field_move_down">&#8594;</button>
               </div>
-              <div class="field-chip" draggable="true" data-field-name="initiator">
-                <button type="button" class="field-move" data-move="up" data-field-name="initiator" data-i18n-title="field_move_up" data-i18n-aria="field_move_up">←</button>
-                <label data-i18n-title="field_drag_hint"><input type="checkbox" data-field="initiator"> initiator</label>
-                <button type="button" class="field-move" data-move="down" data-field-name="initiator" data-i18n-title="field_move_down" data-i18n-aria="field_move_down">→</button>
+              <div class="field-chip" data-field-name="initiator">
+                <button type="button" class="field-move" data-move="up" data-field-name="initiator" data-i18n-title="field_move_up" data-i18n-aria="field_move_up">&#8592;</button>
+                <span class="field-order-badge" aria-hidden="true"></span>
+                <label><input type="checkbox" data-field="initiator"> initiator</label>
+                <button type="button" class="field-move" data-move="down" data-field-name="initiator" data-i18n-title="field_move_down" data-i18n-aria="field_move_down">&#8594;</button>
               </div>
-              <div class="field-chip" draggable="true" data-field-name="requestHeaders">
-                <button type="button" class="field-move" data-move="up" data-field-name="requestHeaders" data-i18n-title="field_move_up" data-i18n-aria="field_move_up">←</button>
-                <label data-i18n-title="field_drag_hint"><input type="checkbox" data-field="requestHeaders"> requestHeaders</label>
-                <button type="button" class="field-move" data-move="down" data-field-name="requestHeaders" data-i18n-title="field_move_down" data-i18n-aria="field_move_down">→</button>
+              <div class="field-chip" data-field-name="requestHeaders">
+                <button type="button" class="field-move" data-move="up" data-field-name="requestHeaders" data-i18n-title="field_move_up" data-i18n-aria="field_move_up">&#8592;</button>
+                <span class="field-order-badge" aria-hidden="true"></span>
+                <label><input type="checkbox" data-field="requestHeaders"> requestHeaders</label>
+                <button type="button" class="field-move" data-move="down" data-field-name="requestHeaders" data-i18n-title="field_move_down" data-i18n-aria="field_move_down">&#8594;</button>
               </div>
-              <div class="field-chip" draggable="true" data-field-name="requestBody">
-                <button type="button" class="field-move" data-move="up" data-field-name="requestBody" data-i18n-title="field_move_up" data-i18n-aria="field_move_up">←</button>
-                <label data-i18n-title="field_drag_hint"><input type="checkbox" data-field="requestBody"> requestBody</label>
-                <button type="button" class="field-move" data-move="down" data-field-name="requestBody" data-i18n-title="field_move_down" data-i18n-aria="field_move_down">→</button>
+              <div class="field-chip" data-field-name="requestBody">
+                <button type="button" class="field-move" data-move="up" data-field-name="requestBody" data-i18n-title="field_move_up" data-i18n-aria="field_move_up">&#8592;</button>
+                <span class="field-order-badge" aria-hidden="true"></span>
+                <label><input type="checkbox" data-field="requestBody"> requestBody</label>
+                <button type="button" class="field-move" data-move="down" data-field-name="requestBody" data-i18n-title="field_move_down" data-i18n-aria="field_move_down">&#8594;</button>
               </div>
-              <div class="field-chip" draggable="true" data-field-name="responseHeaders">
-                <button type="button" class="field-move" data-move="up" data-field-name="responseHeaders" data-i18n-title="field_move_up" data-i18n-aria="field_move_up">←</button>
-                <label data-i18n-title="field_drag_hint"><input type="checkbox" data-field="responseHeaders"> responseHeaders</label>
-                <button type="button" class="field-move" data-move="down" data-field-name="responseHeaders" data-i18n-title="field_move_down" data-i18n-aria="field_move_down">→</button>
+              <div class="field-chip" data-field-name="responseHeaders">
+                <button type="button" class="field-move" data-move="up" data-field-name="responseHeaders" data-i18n-title="field_move_up" data-i18n-aria="field_move_up">&#8592;</button>
+                <span class="field-order-badge" aria-hidden="true"></span>
+                <label><input type="checkbox" data-field="responseHeaders"> responseHeaders</label>
+                <button type="button" class="field-move" data-move="down" data-field-name="responseHeaders" data-i18n-title="field_move_down" data-i18n-aria="field_move_down">&#8594;</button>
               </div>
-              <div class="field-chip" draggable="true" data-field-name="mimeType">
-                <button type="button" class="field-move" data-move="up" data-field-name="mimeType" data-i18n-title="field_move_up" data-i18n-aria="field_move_up">←</button>
-                <label data-i18n-title="field_drag_hint"><input type="checkbox" data-field="mimeType"> mimeType</label>
-                <button type="button" class="field-move" data-move="down" data-field-name="mimeType" data-i18n-title="field_move_down" data-i18n-aria="field_move_down">→</button>
+              <div class="field-chip" data-field-name="mimeType">
+                <button type="button" class="field-move" data-move="up" data-field-name="mimeType" data-i18n-title="field_move_up" data-i18n-aria="field_move_up">&#8592;</button>
+                <span class="field-order-badge" aria-hidden="true"></span>
+                <label><input type="checkbox" data-field="mimeType"> mimeType</label>
+                <button type="button" class="field-move" data-move="down" data-field-name="mimeType" data-i18n-title="field_move_down" data-i18n-aria="field_move_down">&#8594;</button>
               </div>
             </fieldset>
 

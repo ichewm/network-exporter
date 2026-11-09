@@ -174,10 +174,6 @@ function snapshotSettings(storage) {
   return storage.getItem("networkExporter.settings.v1");
 }
 
-function fakeChip(field) {
-  return { dataset: { fieldName: field }, classList: new MockClassList() };
-}
-
 // VM-context arrays carry the VM's Array.prototype, which host-side
 // deepStrictEqual rejects. Convert before comparing.
 function host(array) {
@@ -312,44 +308,54 @@ assert.deepStrictEqual(host(logicB.state.fieldOrder), orderBeforeFull, "Full kee
 assert.deepStrictEqual(readSettings(storageA).exportFields, orderBeforeFull,
   "Full persists all fields in the current order");
 
-// ===== 7. Drag interaction =====
+// ===== 7. No drag affordances + ordinal badges =====
 const storageC = new MockStorage();
 const sessionC = makePanelVm(storageC);
 const logicC = sessionC.context.NetworkExporterInternals;
 const fieldListC = sessionC.elements.get("fieldList");
 
-// drop without dragstart → no-op, no write
-fieldListC.listeners.drop({ preventDefault() {} });
-assert.strictEqual(storageC.getItem("networkExporter.settings.v1"), null);
+// Drag was removed in favor of numbered pills: no DnD listeners at all.
+assert.ok(!("dragstart" in fieldListC.listeners), "no dragstart listener");
+assert.ok(!("dragover" in fieldListC.listeners), "no dragover listener");
+assert.ok(!("drop" in fieldListC.listeners), "no drop listener");
+assert.ok(!("dragend" in fieldListC.listeners), "no dragend listener");
 
-// dragstart marks the chip, drop moves it (no chips in the mock environment,
-// so the computed drop index is 0 → front).
-fieldListC.listeners.dragstart({
-  target: { closest: () => fakeChip("responseHeaders") },
-  dataTransfer: { effectAllowed: "", setData() {} }
-});
-fieldListC.listeners.dragover({
-  preventDefault() {},
-  clientY: 42,
-  dataTransfer: { dropEffect: "" }
-});
-fieldListC.listeners.drop({ preventDefault() {}, clientY: 42 });
-assert.strictEqual(logicC.state.fieldOrder[0], "responseHeaders", "drag-drop moves the chip");
-assert.deepStrictEqual(readSettings(storageC).exportFields, DEFAULT_CHECKED,
-  "dragging an unchecked field keeps the persisted export order intact");
-// dragend cleans up without throwing (chips are absent in the mock)
-fieldListC.listeners.dragend();
-assert.ok(true, "dragend tolerated");
+// Fresh install: default checked fields numbered 1-4, unchecked unnumbered.
+assert.deepStrictEqual(
+  host(logicC.getOrderBadges()).map((badge) => [badge.field, badge.ordinal]),
+  [
+    ["curlRequest", 1], ["statusCode", 2], ["responseBody", 3], ["method", 4],
+    ["url", 0], ["name", 0], ["type", 0], ["size", 0], ["time", 0],
+    ["initiator", 0], ["requestHeaders", 0], ["requestBody", 0],
+    ["responseHeaders", 0], ["mimeType", 0]
+  ],
+  "badges number checked fields in export order"
+);
 
-// dragging to the same position writes nothing
-const beforeDrag = snapshotSettings(storageC);
-fieldListC.listeners.dragstart({
-  target: { closest: () => fakeChip("responseHeaders") },
-  dataTransfer: { effectAllowed: "", setData() {} }
-});
-fieldListC.listeners.drop({ preventDefault() {}, clientY: 0 });
-assert.strictEqual(snapshotSettings(storageC), beforeDrag,
-  "dropping at the current position does not write storage");
+// Reordering renumbers: move unchecked responseHeaders to front, then check it
+// → it becomes #1 and the rest shift.
+logicC.moveFieldTo("responseHeaders", 0);
+const responseHeadersInput = sessionC.fieldInputs.find((input) => input.dataset.field === "responseHeaders");
+responseHeadersInput.checked = true;
+fieldListC.listeners.change({ target: { dataset: { field: "responseHeaders" } } });
+assert.deepStrictEqual(
+  host(logicC.getOrderBadges()).map((badge) => [badge.field, badge.ordinal]).slice(0, 5),
+  [["responseHeaders", 1], ["curlRequest", 2], ["statusCode", 3], ["responseBody", 4], ["method", 5]],
+  "badges renumber after a move plus a new selection"
+);
+assert.deepStrictEqual(readSettings(storageC).exportFields,
+  ["responseHeaders", "curlRequest", "statusCode", "responseBody", "method"],
+  "persistence matches the badge order");
+
+// Unchecking compacts the numbers again.
+const statusCodeInput = sessionC.fieldInputs.find((input) => input.dataset.field === "statusCode");
+statusCodeInput.checked = false;
+fieldListC.listeners.change({ target: { dataset: { field: "statusCode" } } });
+assert.deepStrictEqual(
+  host(logicC.getOrderBadges()).map((badge) => [badge.field, badge.ordinal]).slice(0, 5),
+  [["responseHeaders", 1], ["curlRequest", 2], ["statusCode", 0], ["responseBody", 3], ["method", 4]],
+  "unchecking compacts the ordinals"
+);
 
 // ===== 8. All 14 inputs stay addressable regardless of order =====
 assert.strictEqual(logicC.getFieldInputs().length, CANONICAL.length);

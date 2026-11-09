@@ -62,7 +62,6 @@
   "fields_legend": { "message": "Fields" },
   "field_move_up": { "message": "Move earlier" },
   "field_move_down": { "message": "Move later" },
-  "field_drag_hint": { "message": "Drag to reorder fields" },
   "include_sensitive": { "message": "Include sensitive headers" },
   "truncate_bodies": { "message": "Truncate large bodies (256 kB)" },
   "copy_json": { "message": "Copy selected as JSON" },

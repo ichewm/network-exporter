@@ -440,6 +440,7 @@ function bindEvents() {
   els.fieldList?.addEventListener("change", (event) => {
     if (event.target?.dataset?.field != null) {
       savePanelSettings();
+      renderOrderBadges();
     }
   });
 
@@ -453,67 +454,6 @@ function bindEvents() {
     }
     moveFieldBy(button.dataset.fieldName, button.dataset.move === "up" ? -1 : 1);
   });
-
-  // Drag a chip for long-distance moves. Checkboxes and buttons keep working:
-  // a press without movement never starts a drag, so their clicks are safe.
-  let dragFieldName = "";
-  const clearDropIndicators = () => {
-    for (const chip of getChips()) {
-      chip.classList.remove("drop-before");
-      chip.classList.remove("drop-after");
-    }
-  };
-  const endDrag = () => {
-    dragFieldName = "";
-    clearDropIndicators();
-    for (const chip of getChips()) {
-      chip.classList.remove("dragging");
-    }
-  };
-  els.fieldList?.addEventListener("dragstart", (event) => {
-    const chip = event.target?.closest?.(".field-chip");
-    if (!chip?.dataset?.fieldName) {
-      return;
-    }
-    dragFieldName = chip.dataset.fieldName;
-    chip.classList.add("dragging");
-    if (event.dataTransfer) {
-      event.dataTransfer.effectAllowed = "move";
-      try {
-        event.dataTransfer.setData("text/plain", dragFieldName);
-      } catch {
-        // Firefox requires setData; some test environments disallow it.
-      }
-    }
-  });
-  els.fieldList?.addEventListener("dragover", (event) => {
-    if (!dragFieldName) {
-      return;
-    }
-    event.preventDefault();
-    if (event.dataTransfer) {
-      event.dataTransfer.dropEffect = "move";
-    }
-    const dropIndex = computeDropIndex(event.clientY, dragFieldName);
-    clearDropIndicators();
-    const chips = getChips().filter((chip) => chip.dataset.fieldName !== dragFieldName);
-    if (dropIndex < chips.length) {
-      chips[dropIndex]?.classList.add("drop-before");
-    } else {
-      chips[chips.length - 1]?.classList.add("drop-after");
-    }
-  });
-  els.fieldList?.addEventListener("drop", (event) => {
-    if (!dragFieldName) {
-      return;
-    }
-    event.preventDefault();
-    moveFieldTo(dragFieldName, computeDropIndex(event.clientY, dragFieldName));
-    endDrag();
-  });
-  // dragend fires after drop, and also after Escape-cancels — either way just
-  // clean up; a cancel leaves the DOM order untouched.
-  els.fieldList?.addEventListener("dragend", endDrag);
 
   els.truncateLargeBodies?.addEventListener("change", () => {
     savePanelSettings();
@@ -926,6 +866,7 @@ function syncFieldChipOrder() {
   const byField = new Map(getChips().map((chip) => [chip.dataset.fieldName, chip]));
   if (!byField.size) {
     updateMoveButtonStates();
+    renderOrderBadges();
     return;
   }
   for (const field of state.fieldOrder) {
@@ -935,6 +876,7 @@ function syncFieldChipOrder() {
     }
   }
   updateMoveButtonStates();
+  renderOrderBadges();
 }
 
 function updateMoveButtonStates() {
@@ -949,8 +891,8 @@ function updateMoveButtonStates() {
   }
 }
 
-// The single reorder primitive: both move buttons (±1) and chip drag (drop
-// index) funnel into it. Returns false and writes nothing when nothing moves.
+// The single reorder primitive for move buttons (±1). Returns false and
+// writes nothing when nothing moves.
 function moveFieldTo(field, targetIndex) {
   const from = state.fieldOrder.indexOf(field);
   if (from === -1) {
@@ -972,23 +914,38 @@ function moveFieldBy(field, delta) {
   return from === -1 ? false : moveFieldTo(field, from + delta);
 }
 
-// Drop index among the non-dragged chips (insertion position after the drag
-// source is spliced out), derived from pointer Y vs each chip's midpoint.
-function computeDropIndex(y, draggedField) {
-  let index = 0;
-  for (const chip of getChips()) {
-    if (chip.dataset.fieldName === draggedField) {
-      continue;
-    }
-    if (typeof chip.getBoundingClientRect !== "function") {
-      break;
-    }
-    const rect = chip.getBoundingClientRect();
-    if (y > rect.top + rect.height / 2) {
-      index += 1;
+// Ordinal badges: checked fields get 1..n in export order, unchecked get none.
+// The numbers — not grid geometry — carry the sequence meaning, so a wrapping
+// multi-column layout never obscures which position a field occupies.
+function getOrderBadges() {
+  const badges = [];
+  let ordinal = 0;
+  for (const input of getFieldInputs()) {
+    if (input.checked) {
+      ordinal += 1;
+      badges.push({ field: input.dataset.field, ordinal });
+    } else {
+      badges.push({ field: input.dataset.field, ordinal: 0 });
     }
   }
-  return index;
+  return badges;
+}
+
+function renderOrderBadges() {
+  const chips = new Map(getChips().map((chip) => [chip.dataset.fieldName, chip]));
+  for (const { field, ordinal } of getOrderBadges()) {
+    const chip = chips.get(field);
+    if (!chip) {
+      continue;
+    }
+    const badge = typeof chip.querySelector === "function"
+      ? chip.querySelector(".field-order-badge")
+      : null;
+    if (badge) {
+      badge.textContent = ordinal ? String(ordinal) : "";
+    }
+    chip.classList.toggle("unchecked", !ordinal);
+  }
 }
 
 function getSelectedFields() {
@@ -1298,7 +1255,8 @@ globalThis.NetworkExporterInternals = {
   moveFieldTo,
   moveFieldBy,
   syncFieldChipOrder,
-  computeDropIndex,
+  getOrderBadges,
+  renderOrderBadges,
   normalizeRequest,
   getTypeGroup,
   getVisibleRequests,

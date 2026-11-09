@@ -33,7 +33,7 @@ Key features:
 - Error filtering for 4xx, 5xx, and failed requests
 - Distinct row highlighting and counts for client errors, server errors, and failed requests
 - Default exclusion for noisy browser extension requests
-- Field-level export controls with click and drag field reordering
+- Field-level export controls with numbered, reorderable field pills
 - Defaults and Full field presets
 - Responsive request table and export pane for narrow DevTools layouts
 - Copy selected requests as JSON

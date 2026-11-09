@@ -62,7 +62,6 @@
   "fields_legend": { "message": "フィールド" },
   "field_move_up": { "message": "前へ移動" },
   "field_move_down": { "message": "後ろへ移動" },
-  "field_drag_hint": { "message": "ドラッグして並べ替え" },
   "include_sensitive": { "message": "機密ヘッダーを含める" },
   "truncate_bodies": { "message": "大きな本体を切り詰め (256 kB)" },
   "copy_json": { "message": "選択を JSON でコピー" },

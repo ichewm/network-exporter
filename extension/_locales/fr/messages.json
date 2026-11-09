@@ -62,7 +62,6 @@
   "fields_legend": { "message": "Champs" },
   "field_move_up": { "message": "Déplacer avant" },
   "field_move_down": { "message": "Déplacer après" },
-  "field_drag_hint": { "message": "Glisser pour réordonner" },
   "include_sensitive": { "message": "Inclure les en-têtes sensibles" },
   "truncate_bodies": { "message": "Tronquer les corps volumineux (256 ko)" },
   "copy_json": { "message": "Copier la sélection en JSON" },

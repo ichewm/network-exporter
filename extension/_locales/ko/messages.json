@@ -62,7 +62,6 @@
   "fields_legend": { "message": "필드" },
   "field_move_up": { "message": "앞으로 이동" },
   "field_move_down": { "message": "뒤로 이동" },
-  "field_drag_hint": { "message": "드래그하여 순서 변경" },
   "include_sensitive": { "message": "민감한 헤더 포함" },
   "truncate_bodies": { "message": "큰 본문 자르기 (256 kB)" },
   "copy_json": { "message": "선택 항목을 JSON으로 복사" },
