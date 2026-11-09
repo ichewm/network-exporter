@@ -114,6 +114,36 @@ function makePanelVm(storage) {
     checked: DEFAULT_CHECKED.includes(field),
     dataset: { field }
   }));
+  // Mock chips so renderOrderBadges / updateMoveButtonStates operate on real
+  // structures: each chip carries an order badge and two move buttons.
+  const chips = CANONICAL.map((field) => {
+    const badge = { textContent: "" };
+    return {
+      dataset: { fieldName: field },
+      classList: new MockClassList(),
+      badge,
+      querySelector(selector) {
+        return selector === ".field-order-badge" ? badge : null;
+      }
+    };
+  });
+  const moveButtons = [];
+  for (const chip of chips) {
+    for (const direction of ["up", "down"]) {
+      moveButtons.push({ dataset: { move: direction, fieldName: chip.dataset.fieldName }, disabled: false });
+    }
+  }
+  const fieldListElement = elements.get("fieldList");
+  fieldListElement.querySelectorAll = (selector) => {
+    if (selector === ".field-chip") {
+      return chips.slice();
+    }
+    if (selector === "[data-move]") {
+      return moveButtons.slice();
+    }
+    return [];
+  };
+  fieldListElement.appendChild = () => {};
 
   const context = {
     console,
@@ -161,7 +191,7 @@ function makePanelVm(storage) {
   vm.runInContext(sharedSource, context, { filename: "shared.js" });
   vm.runInContext(panelSource, context, { filename: "panel.js" });
 
-  return { context, elements, fieldInputs };
+  return { context, elements, fieldInputs, chips };
 }
 
 function readSettings(storage) {
@@ -357,7 +387,30 @@ assert.deepStrictEqual(
   "unchecking compacts the ordinals"
 );
 
-// ===== 8. All 14 inputs stay addressable regardless of order =====
+// ===== 8. Preset badge rendering on the DOM chips (Full/Defaults) =====
+const storageD = new MockStorage();
+const sessionD = makePanelVm(storageD);
+const logicD = sessionD.context.NetworkExporterInternals;
+
+// Fresh install: default fields numbered 1-4, unchecked dimmed and unnumbered.
+const badgeText = () => sessionD.chips.map((chip) => chip.badge.textContent);
+const dimmed = () => sessionD.chips.filter((chip) => chip.classList.contains("unchecked")).map((chip) => chip.dataset.fieldName);
+assert.deepStrictEqual(badgeText(), ["1", "2", "3", "4", "", "", "", "", "", "", "", "", "", ""]);
+assert.deepStrictEqual(dimmed(), CANONICAL.slice(4));
+
+// Full: every pill numbered, nothing dimmed — regression for the bug where
+// programmatic checked changes skipped renderOrderBadges and left pills gray.
+sessionD.elements.get("selectFullFields").listeners.click();
+assert.deepStrictEqual(badgeText(), ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14"],
+  "Full numbers every pill");
+assert.deepStrictEqual(dimmed(), [], "Full clears all dimming");
+
+// Defaults: back to 1-4, the rest dimmed again.
+sessionD.elements.get("selectDefaults").listeners.click();
+assert.deepStrictEqual(badgeText(), ["1", "2", "3", "4", "", "", "", "", "", "", "", "", "", ""]);
+assert.deepStrictEqual(dimmed(), CANONICAL.slice(4));
+
+// ===== 9. All 14 inputs stay addressable regardless of order =====
 assert.strictEqual(logicC.getFieldInputs().length, CANONICAL.length);
 assert.deepStrictEqual(
   host(logicC.getFieldInputs().map((input) => input.dataset.field)).sort(),

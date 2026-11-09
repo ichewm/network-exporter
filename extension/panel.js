@@ -430,6 +430,9 @@ function bindEvents() {
     for (const input of getFieldInputs()) {
       input.checked = true;
     }
+    // Programmatic checked changes fire no `change` event — refresh the
+    // badges and dimming explicitly, or every pill stays visually stale.
+    renderOrderBadges();
     savePanelSettings();
     setStatus(t("msg_full_selected"));
   });
