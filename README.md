@@ -22,6 +22,7 @@ It adds a `Network Exporter` tab to DevTools so developers can select a small se
 - Copy selected requests as Markdown
 - Sensitive headers excluded by default
 - Panel settings remembered across browser restarts (no data leaves the device)
+- Reorderable export fields — click ← → to nudge, drag a field to move it far; your field order drives the export
 
 ## Install Locally
 
@@ -45,7 +46,7 @@ chrome-web-store/
 The upload ZIP is:
 
 ```text
-chrome-web-store/network-exporter-0.5.1.zip
+chrome-web-store/network-exporter-0.6.0.zip
 ```
 
 ## Privacy

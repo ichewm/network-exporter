@@ -645,7 +645,7 @@ td:nth-child(7) {
 
 .field-list {
   display: grid;
-  grid-template-columns: 1fr;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
   gap: 8px;
   margin: 0;
   padding: 10px;
@@ -665,6 +665,49 @@ td:nth-child(7) {
   gap: 7px;
   min-width: 0;
   overflow-wrap: anywhere;
+}
+
+.field-chip {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+  user-select: none;
+  cursor: grab;
+}
+
+.field-chip label {
+  flex: 1;
+}
+
+.field-move {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  font-size: 12px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.field-move:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+.field-chip.dragging {
+  opacity: 0.4;
+}
+
+.field-chip.drop-before {
+  box-shadow: 0 -2px 0 0 var(--accent);
+}
+
+.field-chip.drop-after {
+  box-shadow: 0 2px 0 0 var(--accent);
 }
 
 .sensitive {

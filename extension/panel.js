@@ -36,6 +36,25 @@ const clampStoredBody = NetworkExporterShared.clampStoredBody;
 const requestNormalizer = NetworkExporterShared.createRequestNormalizer();
 const getTypeGroup = NetworkExporterShared.getTypeGroup;
 
+// Canonical field order: matches the panel.html field list and the Defaults
+// preset. Drives initial layout, restore fallback, and Defaults reset.
+const CANONICAL_FIELD_ORDER = [
+  "curlRequest",
+  "statusCode",
+  "responseBody",
+  "method",
+  "url",
+  "name",
+  "type",
+  "size",
+  "time",
+  "initiator",
+  "requestHeaders",
+  "requestBody",
+  "responseHeaders",
+  "mimeType"
+];
+
 const state = {
   requests: [],
   selectedIds: new Set(),
@@ -48,7 +67,10 @@ const state = {
   filterText: "",
   invertFilter: false,
   excludeExtensionRequests: true,
-  statusFilter: ""
+  statusFilter: "",
+  // UI row order of export fields; the export follows the checked fields'
+  // relative order within this list.
+  fieldOrder: CANONICAL_FIELD_ORDER.slice()
 };
 
 let captureStore = null;
@@ -213,6 +235,17 @@ function applyPersistedSettingsToUi() {
   for (const input of getFieldInputs()) {
     input.checked = exportFields.has(input.dataset.field);
   }
+
+  // Restore order: checked fields in their persisted export order first, then
+  // the remaining (unchecked) fields in canonical order. Only the checked
+  // fields' relative order survives a restart — unchecked positions are
+  // session cosmetics and never affect the export.
+  const persistedOrder = new Set(settings.exportFields);
+  state.fieldOrder = [
+    ...settings.exportFields,
+    ...CANONICAL_FIELD_ORDER.filter((field) => !persistedOrder.has(field))
+  ];
+  syncFieldChipOrder();
 
   renderExportPane();
 }
@@ -385,6 +418,10 @@ function bindEvents() {
     for (const input of getFieldInputs()) {
       input.checked = defaultFields.has(input.dataset.field);
     }
+    // Defaults resets the full field configuration: the default set *and* the
+    // canonical order.
+    state.fieldOrder = CANONICAL_FIELD_ORDER.slice();
+    syncFieldChipOrder();
     savePanelSettings();
     setStatus(t("msg_defaults_selected"));
   });
@@ -405,6 +442,78 @@ function bindEvents() {
       savePanelSettings();
     }
   });
+
+  // Move buttons: one click = one step. First field's ← and last field's →
+  // are disabled (updateMoveButtonStates) and additionally no-op here, so
+  // boundary clicks never write storage.
+  els.fieldList?.addEventListener("click", (event) => {
+    const button = event.target?.closest?.("[data-move]");
+    if (!button || button.disabled) {
+      return;
+    }
+    moveFieldBy(button.dataset.fieldName, button.dataset.move === "up" ? -1 : 1);
+  });
+
+  // Drag a chip for long-distance moves. Checkboxes and buttons keep working:
+  // a press without movement never starts a drag, so their clicks are safe.
+  let dragFieldName = "";
+  const clearDropIndicators = () => {
+    for (const chip of getChips()) {
+      chip.classList.remove("drop-before");
+      chip.classList.remove("drop-after");
+    }
+  };
+  const endDrag = () => {
+    dragFieldName = "";
+    clearDropIndicators();
+    for (const chip of getChips()) {
+      chip.classList.remove("dragging");
+    }
+  };
+  els.fieldList?.addEventListener("dragstart", (event) => {
+    const chip = event.target?.closest?.(".field-chip");
+    if (!chip?.dataset?.fieldName) {
+      return;
+    }
+    dragFieldName = chip.dataset.fieldName;
+    chip.classList.add("dragging");
+    if (event.dataTransfer) {
+      event.dataTransfer.effectAllowed = "move";
+      try {
+        event.dataTransfer.setData("text/plain", dragFieldName);
+      } catch {
+        // Firefox requires setData; some test environments disallow it.
+      }
+    }
+  });
+  els.fieldList?.addEventListener("dragover", (event) => {
+    if (!dragFieldName) {
+      return;
+    }
+    event.preventDefault();
+    if (event.dataTransfer) {
+      event.dataTransfer.dropEffect = "move";
+    }
+    const dropIndex = computeDropIndex(event.clientY, dragFieldName);
+    clearDropIndicators();
+    const chips = getChips().filter((chip) => chip.dataset.fieldName !== dragFieldName);
+    if (dropIndex < chips.length) {
+      chips[dropIndex]?.classList.add("drop-before");
+    } else {
+      chips[chips.length - 1]?.classList.add("drop-after");
+    }
+  });
+  els.fieldList?.addEventListener("drop", (event) => {
+    if (!dragFieldName) {
+      return;
+    }
+    event.preventDefault();
+    moveFieldTo(dragFieldName, computeDropIndex(event.clientY, dragFieldName));
+    endDrag();
+  });
+  // dragend fires after drop, and also after Escape-cancels — either way just
+  // clean up; a cancel leaves the DOM order untouched.
+  els.fieldList?.addEventListener("dragend", endDrag);
 
   els.truncateLargeBodies?.addEventListener("change", () => {
     savePanelSettings();
@@ -776,8 +885,110 @@ function appendCell(row, text, title, className = "") {
   row.appendChild(td);
 }
 
+// Checkbox inputs in the user's current field order. `data-field` lives only
+// on the checkboxes (chips and move buttons use data-field-name), so this
+// selector never picks up the reorder affordances.
 function getFieldInputs() {
-  return Array.from(document.querySelectorAll("[data-field]"));
+  const inputs = Array.from(document.querySelectorAll("[data-field]"));
+  const order = state.fieldOrder;
+  if (!order.length) {
+    return inputs;
+  }
+  const byField = new Map(inputs.map((input) => [input.dataset.field, input]));
+  const seen = new Set();
+  const ordered = [];
+  for (const field of order) {
+    const input = byField.get(field);
+    if (input) {
+      seen.add(field);
+      ordered.push(input);
+    }
+  }
+  for (const input of inputs) {
+    if (!seen.has(input.dataset.field)) {
+      ordered.push(input);
+    }
+  }
+  return ordered;
+}
+
+function getChips() {
+  return Array.from(els.fieldList?.querySelectorAll?.(".field-chip") || []);
+}
+
+// Reorders the real DOM chips to match state.fieldOrder. appendChild on an
+// existing node moves it, so one pass re-sequences the whole list.
+function syncFieldChipOrder() {
+  const list = els.fieldList;
+  if (!list || typeof list.querySelectorAll !== "function") {
+    return;
+  }
+  const byField = new Map(getChips().map((chip) => [chip.dataset.fieldName, chip]));
+  if (!byField.size) {
+    updateMoveButtonStates();
+    return;
+  }
+  for (const field of state.fieldOrder) {
+    const chip = byField.get(field);
+    if (chip) {
+      list.appendChild(chip);
+    }
+  }
+  updateMoveButtonStates();
+}
+
+function updateMoveButtonStates() {
+  const first = state.fieldOrder[0];
+  const last = state.fieldOrder[state.fieldOrder.length - 1];
+  for (const button of Array.from(els.fieldList?.querySelectorAll?.("[data-move]") || [])) {
+    if (button.dataset.move === "up") {
+      button.disabled = button.dataset.fieldName === first;
+    } else if (button.dataset.move === "down") {
+      button.disabled = button.dataset.fieldName === last;
+    }
+  }
+}
+
+// The single reorder primitive: both move buttons (±1) and chip drag (drop
+// index) funnel into it. Returns false and writes nothing when nothing moves.
+function moveFieldTo(field, targetIndex) {
+  const from = state.fieldOrder.indexOf(field);
+  if (from === -1) {
+    return false;
+  }
+  const to = Math.max(0, Math.min(state.fieldOrder.length - 1, targetIndex));
+  if (to === from) {
+    return false;
+  }
+  state.fieldOrder.splice(from, 1);
+  state.fieldOrder.splice(to, 0, field);
+  syncFieldChipOrder();
+  savePanelSettings();
+  return true;
+}
+
+function moveFieldBy(field, delta) {
+  const from = state.fieldOrder.indexOf(field);
+  return from === -1 ? false : moveFieldTo(field, from + delta);
+}
+
+// Drop index among the non-dragged chips (insertion position after the drag
+// source is spliced out), derived from pointer Y vs each chip's midpoint.
+function computeDropIndex(y, draggedField) {
+  let index = 0;
+  for (const chip of getChips()) {
+    if (chip.dataset.fieldName === draggedField) {
+      continue;
+    }
+    if (typeof chip.getBoundingClientRect !== "function") {
+      break;
+    }
+    const rect = chip.getBoundingClientRect();
+    if (y > rect.top + rect.height / 2) {
+      index += 1;
+    }
+  }
+  return index;
 }
 
 function getSelectedFields() {
@@ -1083,6 +1294,11 @@ globalThis.NetworkExporterInternals = {
   collectPanelSettings,
   savePanelSettings,
   copyViaExecCommand,
+  getFieldInputs,
+  moveFieldTo,
+  moveFieldBy,
+  syncFieldChipOrder,
+  computeDropIndex,
   normalizeRequest,
   getTypeGroup,
   getVisibleRequests,

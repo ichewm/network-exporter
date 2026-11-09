@@ -5,7 +5,7 @@
 Upload this file in the Chrome Web Store Developer Dashboard:
 
 ```text
-network-exporter-0.5.1.zip
+network-exporter-0.6.0.zip
 ```
 
 The ZIP has `manifest.json` at the archive root and contains only runtime extension files.
@@ -30,7 +30,7 @@ docs/store-listing.md
 docs/privacy-policy.md
 docs/privacy-dashboard-notes.md
 docs/permission-justification.md
-docs/release-notes-0.5.1.md
+docs/release-notes-0.6.0.md
 docs/submission-checklist.md
 ```
 
@@ -49,6 +49,7 @@ filters-and-detail-ok
 filter-clears-selection-ok
 settings-persistence-ok
 clipboard-fallback-ok
+export-field-order-ok
 ```
 
 Image sizes:
