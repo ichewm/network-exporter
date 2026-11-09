@@ -40,6 +40,7 @@ Key features:
 - Copy selected requests as Markdown
 - Copy feedback shows payload size and an estimated token count, color-coded by context budget so you can see whether the export fits your model
 - Sensitive headers excluded by default
+- Panel settings remembered across DevTools and browser restarts (preserve log, filters, export fields) — stored locally, never synced off the device
 
 Network Exporter is designed for debugging API workflows, preparing bug reports, sharing focused request examples, and pasting compact context into LLMs and development tools.
 

@@ -25,13 +25,25 @@ function attachPanelWindow(panelWindow) {
   panelWindow.NetworkExporterPendingStore = captureStore;
 }
 
+function getSettingsStorage() {
+  try {
+    return globalThis.localStorage || null;
+  } catch {
+    return null;
+  }
+}
+
 function createNetworkExporterCaptureStore() {
   const normalizer = NetworkExporterShared.createRequestNormalizer();
   const subscribers = new Set();
+  const settingsStorage = getSettingsStorage();
   const state = {
     requests: [],
+    // Intentionally NOT persisted: a paused recorder must never silently
+    // survive into the next DevTools session. Mirrors DevTools, where the
+    // Network record toggle is session-scoped and always restarts recording.
     isRecording: true,
-    preserveLog: false
+    preserveLog: NetworkExporterShared.loadPersistedSettings(settingsStorage).preserveLog
   };
 
   chrome.devtools.network.onRequestFinished.addListener((request) => {
@@ -77,6 +89,23 @@ function createNetworkExporterCaptureStore() {
       clear();
     }
   });
+
+  // Cross-window sync: another DevTools window of the same extension origin
+  // wrote the shared settings while this DevTools instance is open. Keep the
+  // live store (and its panel) in sync instead of picking the change up only
+  // on the next DevTools launch.
+  if (typeof globalThis.addEventListener === "function") {
+    globalThis.addEventListener("storage", (event) => {
+      if (!event || event.key !== NetworkExporterShared.PERSISTED_SETTINGS_KEY) {
+        return;
+      }
+      const persisted = NetworkExporterShared.loadPersistedSettings(settingsStorage);
+      if (persisted.preserveLog !== state.preserveLog) {
+        state.preserveLog = persisted.preserveLog;
+        notify();
+      }
+    });
+  }
 
   hydrateFromHar();
 
@@ -131,6 +160,7 @@ function createNetworkExporterCaptureStore() {
 
   function setPreserveLog(value) {
     state.preserveLog = Boolean(value);
+    NetworkExporterShared.persistSettings(settingsStorage, { preserveLog: state.preserveLog });
     notify();
   }
 

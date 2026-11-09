@@ -21,6 +21,7 @@ It adds a `Network Exporter` tab to DevTools so developers can select a small se
 - Copy selected requests as JSON
 - Copy selected requests as Markdown
 - Sensitive headers excluded by default
+- Panel settings remembered across browser restarts (no data leaves the device)
 
 ## Install Locally
 
@@ -44,7 +45,7 @@ chrome-web-store/
 The upload ZIP is:
 
 ```text
-chrome-web-store/network-exporter-0.4.1.zip
+chrome-web-store/network-exporter-0.5.0.zip
 ```
 
 ## Privacy
@@ -65,7 +66,7 @@ Run from the repository root:
 node --check extension/panel.js
 node --check extension/devtools.js
 node --check extension/shared.js
-node extension/tests/00-panel-logic.test.js
+for f in extension/tests/*.test.js; do node "$f"; done
 ```
 
 ## License

@@ -72,6 +72,128 @@
     return truncateBody(value, MAX_STORED_BODY_BYTES);
   }
 
+  // ---- Persisted panel settings -------------------------------------------
+  // Mirrors Chrome DevTools' settings model: long-lived user preferences are
+  // persisted per profile, while task state (recording, selection, requests)
+  // stays session-only.
+  const PERSISTED_SETTINGS_KEY = "networkExporter.settings.v1";
+  const PERSISTED_FILTER_TEXT_MAX_LENGTH = 1000;
+  const PERSISTED_TYPE_GROUPS = new Set([
+    "all",
+    "fetch-xhr",
+    "doc",
+    "css",
+    "js",
+    "font",
+    "img",
+    "media",
+    "manifest",
+    "socket",
+    "wasm",
+    "other"
+  ]);
+  const PERSISTED_STATUS_FILTERS = new Set(["", "2", "3", "4", "5", "failed", "errors"]);
+  const PERSISTED_EXPORT_FIELDS = new Set([
+    "curlRequest",
+    "statusCode",
+    "responseBody",
+    "method",
+    "url",
+    "name",
+    "type",
+    "size",
+    "time",
+    "initiator",
+    "requestHeaders",
+    "requestBody",
+    "responseHeaders",
+    "mimeType"
+  ]);
+  const DEFAULT_PERSISTED_EXPORT_FIELDS = ["curlRequest", "statusCode", "responseBody", "method"];
+
+  function getPersistedSettingsDefaults() {
+    return {
+      preserveLog: false,
+      invertFilter: false,
+      excludeExtensionRequests: true,
+      filterText: "",
+      activeType: "all",
+      statusFilter: "",
+      isExportCollapsed: false,
+      exportFields: DEFAULT_PERSISTED_EXPORT_FIELDS.slice(),
+      truncateLargeBodies: true
+    };
+  }
+
+  function sanitizePersistedSettings(raw) {
+    const settings = getPersistedSettingsDefaults();
+    if (!raw || typeof raw !== "object") {
+      return settings;
+    }
+
+    for (const key of [
+      "preserveLog",
+      "invertFilter",
+      "excludeExtensionRequests",
+      "isExportCollapsed",
+      "truncateLargeBodies"
+    ]) {
+      if (typeof raw[key] === "boolean") {
+        settings[key] = raw[key];
+      }
+    }
+
+    if (typeof raw.filterText === "string") {
+      settings.filterText = raw.filterText.slice(0, PERSISTED_FILTER_TEXT_MAX_LENGTH);
+    }
+
+    if (typeof raw.activeType === "string" && PERSISTED_TYPE_GROUPS.has(raw.activeType)) {
+      settings.activeType = raw.activeType;
+    }
+
+    if (typeof raw.statusFilter === "string" && PERSISTED_STATUS_FILTERS.has(raw.statusFilter)) {
+      settings.statusFilter = raw.statusFilter;
+    }
+
+    if (Array.isArray(raw.exportFields)) {
+      const seen = new Set();
+      const exportFields = [];
+      for (const field of raw.exportFields) {
+        if (typeof field === "string" && PERSISTED_EXPORT_FIELDS.has(field) && !seen.has(field)) {
+          seen.add(field);
+          exportFields.push(field);
+        }
+      }
+      if (exportFields.length) {
+        settings.exportFields = exportFields;
+      }
+    }
+
+    return settings;
+  }
+
+  function loadPersistedSettings(storage) {
+    let raw = null;
+    try {
+      const text = storage?.getItem?.(PERSISTED_SETTINGS_KEY);
+      if (typeof text === "string" && text) {
+        raw = JSON.parse(text);
+      }
+    } catch {
+      raw = null;
+    }
+    return sanitizePersistedSettings(raw);
+  }
+
+  function persistSettings(storage, settings) {
+    try {
+      const merged = { ...loadPersistedSettings(storage), ...(settings || {}) };
+      storage?.setItem?.(PERSISTED_SETTINGS_KEY, JSON.stringify(merged));
+    } catch {
+      // Storage unavailable (disabled or quota exceeded) — keep in-memory state only.
+    }
+  }
+
   function createRequestNormalizer() {
     let nextRequestSequence = 0;
 
@@ -288,6 +410,10 @@
     SENSITIVE_HEADER_NAMES,
     MAX_EXPORT_BODY_BYTES,
     MAX_STORED_BODY_BYTES,
+    PERSISTED_SETTINGS_KEY,
+    getPersistedSettingsDefaults,
+    loadPersistedSettings,
+    persistSettings,
     createRequestNormalizer,
     getName,
     getTypeGroup,

@@ -83,6 +83,7 @@ const els = {
   copyJson: document.getElementById("copyJson"),
   copyMarkdown: document.getElementById("copyMarkdown"),
   truncateLargeBodies: document.getElementById("truncateLargeBodies"),
+  fieldList: document.getElementById("fieldList"),
   statusMessage: document.getElementById("statusMessage")
 };
 
@@ -96,6 +97,8 @@ function init() {
   } catch {
     // Extension context invalidated — fall back to raw data-i18n values.
   }
+
+  applyPersistedSettingsToUi();
 
   if (globalThis.NetworkExporterPendingStore) {
     attachNetworkExporterStore(globalThis.NetworkExporterPendingStore);
@@ -166,6 +169,72 @@ function updateCaptureControls() {
   els.preserveLog.checked = state.preserveLog;
 }
 
+function getSettingsStorage() {
+  try {
+    return globalThis.localStorage || null;
+  } catch {
+    return null;
+  }
+}
+
+// Restores persisted preferences into state + UI. Mirrors Chrome DevTools,
+// which persists long-lived Network panel preferences (preserve log, invert,
+// hide extensions, filter text, type filters) across browser restarts.
+//
+// Deliberately NOT restored:
+// - includeSensitiveHeaders: always starts unchecked so a stale toggle can
+//   not silently leak Cookie/Authorization headers into later exports.
+// - isRecording: always starts recording (same reasoning as devtools.js).
+// - selection / active request / detail tab: they reference capture data that
+//   never survives a DevTools session anyway.
+function applyPersistedSettingsToUi() {
+  const settings = NetworkExporterShared.loadPersistedSettings(getSettingsStorage());
+
+  state.preserveLog = settings.preserveLog;
+  state.invertFilter = settings.invertFilter;
+  state.excludeExtensionRequests = settings.excludeExtensionRequests;
+  state.filterText = settings.filterText.trim().toLowerCase();
+  state.activeType = settings.activeType;
+  state.statusFilter = settings.statusFilter;
+  state.isExportCollapsed = settings.isExportCollapsed;
+
+  els.preserveLog.checked = settings.preserveLog;
+  els.invertFilter.checked = settings.invertFilter;
+  els.excludeExtensionRequests.checked = settings.excludeExtensionRequests;
+  els.filterInput.value = settings.filterText;
+  els.statusFilter.value = settings.statusFilter;
+  els.truncateLargeBodies.checked = settings.truncateLargeBodies;
+
+  for (const chip of els.typeChips.querySelectorAll("[data-type]")) {
+    chip.classList.toggle("active", chip.dataset.type === state.activeType);
+  }
+
+  const exportFields = new Set(settings.exportFields);
+  for (const input of getFieldInputs()) {
+    input.checked = exportFields.has(input.dataset.field);
+  }
+
+  renderExportPane();
+}
+
+function collectPanelSettings() {
+  return {
+    preserveLog: state.preserveLog,
+    invertFilter: state.invertFilter,
+    excludeExtensionRequests: state.excludeExtensionRequests,
+    filterText: els.filterInput.value,
+    activeType: state.activeType,
+    statusFilter: state.statusFilter,
+    isExportCollapsed: state.isExportCollapsed,
+    exportFields: getSelectedFields(),
+    truncateLargeBodies: els.truncateLargeBodies.checked
+  };
+}
+
+function savePanelSettings() {
+  NetworkExporterShared.persistSettings(getSettingsStorage(), collectPanelSettings());
+}
+
 function clearSelection() {
   state.selectedIds.clear();
 }
@@ -196,7 +265,11 @@ function bindEvents() {
   els.preserveLog.addEventListener("change", () => {
     state.preserveLog = els.preserveLog.checked;
     if (captureStore) {
+      // The capture store owns this setting (it must apply from DevTools open,
+      // before this panel is selected) and persists it in setPreserveLog().
       captureStore.setPreserveLog(state.preserveLog);
+    } else {
+      savePanelSettings();
     }
     setStatus(state.preserveLog ? t("msg_preserve_on") : t("msg_preserve_off"));
   });
@@ -204,6 +277,7 @@ function bindEvents() {
   els.toggleExportPane.addEventListener("click", () => {
     state.isExportCollapsed = !state.isExportCollapsed;
     renderExportPane();
+    savePanelSettings();
   });
 
   els.filterToggle.addEventListener("click", () => {
@@ -215,24 +289,28 @@ function bindEvents() {
     state.filterText = els.filterInput.value.trim().toLowerCase();
     clearSelection();
     render();
+    savePanelSettings();
   });
 
   els.invertFilter.addEventListener("change", () => {
     state.invertFilter = els.invertFilter.checked;
     clearSelection();
     render();
+    savePanelSettings();
   });
 
   els.excludeExtensionRequests.addEventListener("change", () => {
     state.excludeExtensionRequests = els.excludeExtensionRequests.checked;
     clearSelection();
     render();
+    savePanelSettings();
   });
 
   els.statusFilter.addEventListener("change", () => {
     state.statusFilter = els.statusFilter.value;
     clearSelection();
     render();
+    savePanelSettings();
   });
 
   els.typeChips.addEventListener("click", (event) => {
@@ -247,6 +325,7 @@ function bindEvents() {
     }
     clearSelection();
     render();
+    savePanelSettings();
   });
 
   els.selectAll.addEventListener("change", () => {
@@ -306,6 +385,7 @@ function bindEvents() {
     for (const input of getFieldInputs()) {
       input.checked = defaultFields.has(input.dataset.field);
     }
+    savePanelSettings();
     setStatus(t("msg_defaults_selected"));
   });
 
@@ -313,7 +393,21 @@ function bindEvents() {
     for (const input of getFieldInputs()) {
       input.checked = true;
     }
+    savePanelSettings();
     setStatus(t("msg_full_selected"));
+  });
+
+  // Export-field checkboxes and the truncation toggle have no state side
+  // effects at click time (they are read during export), but they must be
+  // persisted as soon as the user changes them.
+  els.fieldList?.addEventListener("change", (event) => {
+    if (event.target?.dataset?.field != null) {
+      savePanelSettings();
+    }
+  });
+
+  els.truncateLargeBodies?.addEventListener("change", () => {
+    savePanelSettings();
   });
 
   els.copyJson.addEventListener("click", () => {
@@ -947,6 +1041,9 @@ globalThis.NetworkExporterInternals = {
   clearSelection,
   attachNetworkExporterStore,
   applyCaptureSnapshot,
+  applyPersistedSettingsToUi,
+  collectPanelSettings,
+  savePanelSettings,
   normalizeRequest,
   getTypeGroup,
   getVisibleRequests,

@@ -54,7 +54,7 @@ Run from the workspace root:
 node --check extension/panel.js
 node --check extension/devtools.js
 node --check extension/shared.js
-node extension/tests/00-panel-logic.test.js
+for f in extension/tests/*.test.js; do node "$f"; done
 ```
 
 ## Install Locally
@@ -100,6 +100,10 @@ Sensitive headers such as `Authorization`, `Cookie`, and `Set-Cookie` are exclud
 - The extension does not upload data anywhere.
 - It does not use the `debugger` permission.
 - It does not modify Chrome's built-in Network panel.
+- Panel preferences are remembered across DevTools and browser restarts using the extension's local `localStorage`: preserve log, invert, exclude extensions, filter text, type chip, status filter, export fields, truncation toggle, and the collapsed export pane. Nothing is synced off the device.
+- Deliberately not persisted: the record/pause state (always restarts recording, matching the Network panel's session-scoped record toggle) and `Include sensitive headers` (always restarts unchecked so a stale toggle cannot leak credentials into later exports).
+- Captured requests, selection, and the inspected request are session-only; the log itself is never written to storage.
+- Multiple DevTools windows share these settings; a preserve-log change in one window is picked up by other open windows.
 - Open DevTools before running the workflow you want to capture. The extension starts listening when DevTools opens, even before the `Network Exporter` tab is selected.
 - Enable `Preserve log` in Network Exporter when you want captured requests to survive reloads, redirects, or other navigations.
 - Response body capture depends on DevTools seeing the request finish. If DevTools was opened after a request happened, reload the page.

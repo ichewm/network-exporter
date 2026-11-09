@@ -5,7 +5,7 @@
 Upload this file in the Chrome Web Store Developer Dashboard:
 
 ```text
-network-exporter-0.4.1.zip
+network-exporter-0.5.0.zip
 ```
 
 The ZIP has `manifest.json` at the archive root and contains only runtime extension files.
@@ -30,7 +30,7 @@ docs/store-listing.md
 docs/privacy-policy.md
 docs/privacy-dashboard-notes.md
 docs/permission-justification.md
-docs/release-notes-0.4.1.md
+docs/release-notes-0.5.0.md
 docs/submission-checklist.md
 ```
 
@@ -39,10 +39,15 @@ The privacy policy must be hosted at a public URL before final submission.
 ## Validation Performed
 
 ```text
-release-manifest-ok
-chrome-pack-ok
-dev-manifest-ok
 panel-logic-ok
+copy-metrics-ok
+body-robustness-ok
+error-paths-ok
+shared-normalizers-ok
+i18n-and-export-ok
+filters-and-detail-ok
+filter-clears-selection-ok
+settings-persistence-ok
 ```
 
 Image sizes:
