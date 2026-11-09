@@ -41,6 +41,7 @@ Key features:
 - Copy feedback shows payload size and an estimated token count, color-coded by context budget so you can see whether the export fits your model
 - Sensitive headers excluded by default
 - Panel settings remembered across DevTools and browser restarts (preserve log, filters, export fields) — stored locally, never synced off the device
+- UI available in English, Chinese (Simplified), Japanese, Korean, German, and French — follows your browser language automatically
 
 Network Exporter is designed for debugging API workflows, preparing bug reports, sharing focused request examples, and pasting compact context into LLMs and development tools.
 
@@ -53,6 +54,8 @@ Privacy and security:
 - No debugger permission
 - Network data is processed locally inside the DevTools panel
 - Data is copied only when you select requests and click a copy button
+
+This extension requires only the "clipboardWrite" permission to copy exports. No other permissions are requested.
 
 ## Short Value Proposition
 
