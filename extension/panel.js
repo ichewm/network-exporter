@@ -790,6 +790,39 @@ function getSelectedRequests() {
   return state.requests.filter((request) => state.selectedIds.has(request.id));
 }
 
+// Fallback for environments where the async Clipboard API is disabled by a
+// Permissions-Policy on an embedding document — e.g. DevTools running inside
+// an IDE webview (VS Code browser preview, remote-debugging containers), where
+// our panel is a nested cross-origin iframe that never receives an
+// `allow="clipboard-write"` delegation. The legacy synchronous
+// document.execCommand("copy") path is not governed by that policy and still
+// works inside a user gesture. It is deprecated, but it is a pure fallback:
+// if it is ever removed or fails, behavior degrades to exactly today's
+// (the copy-failed status), never worse.
+function copyViaExecCommand(text) {
+  let textarea = null;
+  try {
+    textarea = document.createElement("textarea");
+    textarea.value = text;
+    // readonly keeps mobile browsers from opening the keyboard; fixed
+    // off-screen placement avoids scrolling the panel.
+    textarea.setAttribute("readonly", "");
+    textarea.style.position = "fixed";
+    textarea.style.top = "0";
+    textarea.style.left = "-9999px";
+    document.body.appendChild(textarea);
+    textarea.select();
+    const ok = document.execCommand("copy");
+    return Boolean(ok);
+  } catch {
+    return false;
+  } finally {
+    if (textarea && textarea.parentNode) {
+      textarea.parentNode.removeChild(textarea);
+    }
+  }
+}
+
 async function copyExport(format) {
   const selected = getSelectedRequests();
   if (!selected.length) {
@@ -818,10 +851,15 @@ async function copyExport(format) {
 
   try {
     await navigator.clipboard.writeText(text);
-    renderCopyResult(selected.length, format, byteLength, tokenCount);
   } catch (error) {
-    setStatus(t("msg_copy_failed", error.message));
+    // Blocked by a Permissions-Policy (or the document lost focus). Retry via
+    // the legacy synchronous path before giving up.
+    if (!copyViaExecCommand(text)) {
+      setStatus(t("msg_copy_failed", error.message));
+      return;
+    }
   }
+  renderCopyResult(selected.length, format, byteLength, tokenCount);
 }
 
 function renderCopyResult(selectedCount, format, byteLength, tokenCount) {
@@ -1044,6 +1082,7 @@ globalThis.NetworkExporterInternals = {
   applyPersistedSettingsToUi,
   collectPanelSettings,
   savePanelSettings,
+  copyViaExecCommand,
   normalizeRequest,
   getTypeGroup,
   getVisibleRequests,

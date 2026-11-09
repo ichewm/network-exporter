@@ -9,6 +9,8 @@
 - [ ] Confirm `Preserve log` keeps captured requests across reloads or redirects.
 - [ ] Confirm panel settings survive a DevTools/browser restart: preserve log, invert, exclude extensions, filter text, type chip, status filter, export fields, truncation toggle, collapsed export pane.
 - [ ] Confirm `Include sensitive headers` and record/pause state reset on a fresh DevTools session (intentional).
+- [ ] Confirm JSON/Markdown copy still works in a normal DevTools window.
+- [ ] If available, confirm copy works with DevTools embedded in an IDE webview (e.g. VS Code browser preview) — this is what the 0.5.1 execCommand fallback addresses.
 - [ ] Confirm JSON copy works.
 - [ ] Confirm Markdown copy works.
 - [ ] Confirm sensitive headers are excluded by default.
@@ -18,7 +20,7 @@
 ## Developer Dashboard
 
 - [ ] Register or open Chrome Web Store Developer Dashboard.
-- [ ] Upload `network-exporter-0.5.0.zip`.
+- [ ] Upload `network-exporter-0.5.1.zip`.
 - [ ] Category: Developer Tools.
 - [ ] Add 128x128 icon from `listing-assets/icon-128.png`.
 - [ ] Add screenshot `listing-assets/screenshots/network-exporter-main-1280x800.png`.
