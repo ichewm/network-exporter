@@ -645,7 +645,7 @@ td:nth-child(7) {
 
 .field-list {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(175px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
   gap: 8px;
   margin: 0;
   padding: 10px;
@@ -687,6 +687,16 @@ td:nth-child(7) {
   flex: 1;
 }
 
+/* Field names are clamped to a single short line (JS truncates to
+   FIELD_NAME_MAX_CHARS + inline ellipsis); these rules are the safety net
+   that keeps the span on one line even in very narrow panes. */
+.field-name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .field-order-badge {
   flex: none;
   min-width: 16px;
@@ -702,9 +712,11 @@ td:nth-child(7) {
   font-variant-numeric: tabular-nums;
 }
 
-/* Keeps every pill's left edge aligned even when a field is unchecked. */
+/* Unchecked fields carry no ordinal, and the empty badge must not keep
+   reserving its slot — collapsing it entirely reclaims the space so each
+   chip row stays compact. */
 .field-order-badge:empty {
-  visibility: hidden;
+  display: none;
 }
 
 .field-move {

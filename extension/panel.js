@@ -38,6 +38,15 @@ const getTypeGroup = NetworkExporterShared.getTypeGroup;
 
 // Canonical field order: matches the panel.html field list and the Defaults
 // preset. Drives initial layout, restore fallback, and Defaults reset.
+// Field names render as compact chips in the export pane. Long identifiers
+// (responseHeaders, curlRequest, …) used to wrap onto a second line and
+// inflate every chip's height. renderFieldNames clamps the visible label to
+// FIELD_NAME_MAX_CHARS glyphs plus an inline ellipsis, so each chip stays one
+// short line; the full name remains available via the span's title (hover
+// tooltip), and exports keep using the untouched data-field value. Idempotent:
+// re-running on an already truncated label ("curlRe…") produces the same text.
+const FIELD_NAME_MAX_CHARS = 6;
+
 const CANONICAL_FIELD_ORDER = [
   "curlRequest",
   "statusCode",
@@ -119,6 +128,8 @@ function init() {
   } catch {
     // Extension context invalidated — fall back to raw data-i18n values.
   }
+
+  renderFieldNames();
 
   applyPersistedSettingsToUi();
 
@@ -859,6 +870,25 @@ function getChips() {
   return Array.from(els.fieldList?.querySelectorAll?.(".field-chip") || []);
 }
 
+// See FIELD_NAME_MAX_CHARS at the top of the file: clamps each chip's visible
+// label to six glyphs plus an inline ellipsis. Full names survive in the
+// span's title tooltip; exports read data-field and never see this. Idempotent
+// by construction — "curlRe…" re-truncates to itself.
+function renderFieldNames() {
+  for (const chip of getChips()) {
+    const nameEl = typeof chip.querySelector === "function"
+      ? chip.querySelector(".field-name")
+      : null;
+    if (!nameEl || typeof nameEl.textContent !== "string") {
+      continue;
+    }
+    const fullName = nameEl.textContent.trim();
+    if (fullName.length > FIELD_NAME_MAX_CHARS) {
+      nameEl.textContent = fullName.slice(0, FIELD_NAME_MAX_CHARS) + "…";
+    }
+  }
+}
+
 // Reorders the real DOM chips to match state.fieldOrder. appendChild on an
 // existing node moves it, so one pass re-sequences the whole list.
 function syncFieldChipOrder() {
@@ -1260,6 +1290,7 @@ globalThis.NetworkExporterInternals = {
   syncFieldChipOrder,
   getOrderBadges,
   renderOrderBadges,
+  renderFieldNames,
   normalizeRequest,
   getTypeGroup,
   getVisibleRequests,
